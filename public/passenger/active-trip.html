@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Trip - CabGo</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/index.html" class="brand-logo">
+                <span class="cab-badge">CAB</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/passenger/passenger-dashboard.html">Dashboard</a></li>
+                <li><a href="/passenger/book-ride.html">Book Ride</a></li>
+                <li><a href="/passenger/active-trip.html" class="active">Active Trip</a></li>
+                <li><a href="/passenger/trip-history.html">Trip History</a></li>
+                <li><a href="/passenger/profile.html">My Profile</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <main class="container" style="max-width: 800px;">
+        <!-- Status / Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h2>Live Trip Tracker</h2>
+                <p style="color: var(--text-secondary);">Real-time dispatch, driver tracking, and journey milestones.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span id="live-indicator" class="badge badge-active" style="display:none;">● LIVE SYNCING</span>
+                <button id="btn-refresh" class="btn btn-sm btn-outline">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <!-- Container 1: No Active Trip -->
+        <div id="no-trip-card" class="card" style="text-align: center; padding: 3rem 1.5rem; display: none;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🚖</div>
+            <h3>No Active Ride in Progress</h3>
+            <p style="color: var(--text-secondary); max-width: 450px; margin: 0.5rem auto 1.5rem;">
+                You don't have any ongoing trips or pending requests right now. Looking for a ride?
+            </p>
+            <a href="/passenger/book-ride.html" class="btn btn-primary btn-lg">Book a Cab Now</a>
+        </div>
+
+        <!-- Container 2: Pending Driver Request -->
+        <div id="pending-card" class="card" style="border: 2px solid var(--primary); display: none;">
+            <div style="text-align: center; padding: 2rem 1rem;">
+                <div style="font-size: 2.5rem; animation: pulse 1.5s infinite;">📡</div>
+                <h3 style="margin-top: 0.75rem;">Finding Your Driver...</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    Your ride request has been dispatched to available nearby drivers. Please stand by.
+                </p>
+
+                <div style="background: #f8fafc; border-radius: 8px; padding: 1.25rem; max-width: 500px; margin: 0 auto 1.5rem; text-align: left;">
+                    <div style="margin-bottom: 0.5rem;">📍 <strong>Pickup:</strong> <span id="pending-pickup">-</span></div>
+                    <div style="margin-bottom: 0.5rem;">🎯 <strong>Destination:</strong> <span id="pending-dest">-</span></div>
+                    <div style="margin-bottom: 0.5rem;">🚗 <strong>Category:</strong> <span id="pending-type">-</span></div>
+                    <div>💰 <strong>Estimated Fare:</strong> <span id="pending-fare" style="font-weight:700; color:var(--primary-dark);">-</span></div>
+                </div>
+
+                <button id="btn-cancel-pending" class="btn btn-danger">Cancel Ride Request</button>
+            </div>
+        </div>
+
+        <!-- Container 3: Confirmed / Started Live Trip Box -->
+        <div id="active-trip-card" class="card" style="display: none; box-shadow: var(--shadow-xl);">
+            <!-- Progression Stepper -->
+            <div class="trip-step-indicator">
+                <div id="step-requested" class="trip-step completed">
+                    <div class="step-circle">1</div>
+                    <span>Requested</span>
+                </div>
+                <div id="step-assigned" class="trip-step completed">
+                    <div class="step-circle">2</div>
+                    <span>Driver Assigned</span>
+                </div>
+                <div id="step-started" class="trip-step">
+                    <div class="step-circle">3</div>
+                    <span>On Trip</span>
+                </div>
+                <div id="step-completed" class="trip-step">
+                    <div class="step-circle">4</div>
+                    <span>Arrived</span>
+                </div>
+            </div>
+
+            <!-- Route Summary -->
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <span id="trip-status-badge" class="badge badge-accepted">CONFIRMED</span>
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Trip ID: #<span id="trip-id-val">-</span></span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-light); font-weight: 700;">Pickup Location</div>
+                        <div id="active-pickup" style="font-weight: 600; font-size: 0.95rem;">-</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-light); font-weight: 700;">Destination</div>
+                        <div id="active-dest" style="font-weight: 600; font-size: 0.95rem;">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Driver & Cab Details -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 55px; height: 55px; border-radius: 50%; background: #e0f2fe; display: flex; align-items: center; justify-content: center; font-size: 1.7rem;">
+                        👨‍✈️
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <h4 id="driver-name-val" style="margin: 0;">Driver Name</h4>
+                            <span id="driver-rating-val" class="badge badge-pending" style="background:#fef3c7; color:#b45309;">⭐ 5.0</span>
+                        </div>
+                        <div style="font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                            Mobile: <a id="driver-mobile-link" href="#" style="font-weight: 600;">-</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: right;">
+                    <div id="vehicle-plate-val" style="font-family: monospace; font-size: 1.1rem; font-weight: 800; background: #fef08a; color: #713f12; padding: 0.2rem 0.6rem; border-radius: 4px; display: inline-block;">
+                        DL-01-AB-1234
+                    </div>
+                    <div id="vehicle-model-val" style="font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.3rem;">
+                        Toyota Camry (SEDAN)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fare & Actions -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 1.25rem;">
+                <div>
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Total Fare:</span>
+                    <div id="trip-fare-val" style="font-size: 1.75rem; font-weight: 800; color: var(--primary-dark);">₹0.00</div>
+                </div>
+                <div id="active-action-container">
+                    <button id="btn-cancel-active" class="btn btn-outline" style="color: var(--danger); border-color: var(--danger);">
+                        Cancel Ride
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Container 4: Trip Completed Rating & Review Modal/Box -->
+        <div id="rating-card" class="card" style="display: none; border: 2px solid var(--success); text-align: center; padding: 2rem;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
+            <h2>You Have Arrived!</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                Your trip has been safely completed. Payment of <strong id="completed-fare-text">₹0</strong> has been processed.
+            </p>
+
+            <div style="max-width: 450px; margin: 0 auto; text-align: left; background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
+                <h4 style="text-align: center; margin-bottom: 1rem;">Rate Your Driver</h4>
+                
+                <div style="display: flex; justify-content: center; margin-bottom: 1.25rem;">
+                    <div id="star-rating-widget" class="star-rating">
+                        <span data-star="1">★</span>
+                        <span data-star="2">★</span>
+                        <span data-star="3">★</span>
+                        <span data-star="4">★</span>
+                        <span data-star="5">★</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="review-comment">Feedback & Compliments</label>
+                    <textarea id="review-comment" class="form-control" rows="3" placeholder="Great driving, smooth and polite..."></textarea>
+                </div>
+
+                <button id="btn-submit-review" class="btn btn-success btn-block">
+                    Submit Rating & Review
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        let currentRequestId = null;
+        let currentTripId = null;
+        let selectedRating = 5;
+        let pollTimer = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!api.requireAuth('PASSENGER')) return;
+
+            initStarRating();
+            document.getElementById('btn-refresh').addEventListener('click', () => syncTripStatus());
+            document.getElementById('btn-cancel-pending').addEventListener('click', () => cancelActiveRide());
+            document.getElementById('btn-cancel-active').addEventListener('click', () => cancelActiveRide());
+            document.getElementById('btn-submit-review').addEventListener('click', () => submitReview());
+
+            await syncTripStatus();
+            // Start AJAX Polling every 4 seconds
+            pollTimer = setInterval(syncTripStatus, 4000);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (pollTimer) clearInterval(pollTimer);
+        });
+
+        async function syncTripStatus() {
+            document.getElementById('live-indicator').style.display = 'inline-block';
+
+            try {
+                const res = await api.get('/rides/my-active');
+                if (!res.success || !res.active) {
+                    showContainer('no-trip-card');
+                    return;
+                }
+
+                if (res.type === 'REQUEST') {
+                    // Pending state
+                    const r = res.request;
+                    currentRequestId = r.request_id;
+                    document.getElementById('pending-pickup').textContent = r.pickup_location;
+                    document.getElementById('pending-dest').textContent = r.destination;
+                    document.getElementById('pending-type').textContent = r.vehicle_type;
+                    document.getElementById('pending-fare').textContent = api.formatCurrency(r.estimated_fare);
+                    showContainer('pending-card');
+                } else if (res.type === 'TRIP') {
+                    const t = res.trip;
+                    currentTripId = t.trip_id;
+                    currentRequestId = t.request_id;
+
+                    document.getElementById('trip-id-val').textContent = t.trip_id;
+                    document.getElementById('active-pickup').textContent = t.pickup_location;
+                    document.getElementById('active-dest').textContent = t.destination;
+                    document.getElementById('trip-fare-val').textContent = api.formatCurrency(t.fare);
+
+                    document.getElementById('driver-name-val').textContent = t.driver_name;
+                    document.getElementById('driver-mobile-link').textContent = t.driver_mobile;
+                    document.getElementById('driver-mobile-link').href = `tel:${t.driver_mobile}`;
+                    document.getElementById('driver-rating-val').textContent = `⭐ ${parseFloat(t.driver_rating || 5).toFixed(1)}`;
+
+                    document.getElementById('vehicle-plate-val').textContent = t.vehicle_number || 'ASSIGNED';
+                    document.getElementById('vehicle-model-val').textContent = `${t.vehicle_model} (${t.vehicle_type})`;
+
+                    const badge = document.getElementById('trip-status-badge');
+                    badge.className = `badge badge-${t.trip_status.toLowerCase()}`;
+                    badge.textContent = t.trip_status;
+
+                    // Update Stepper
+                    const stepRequested = document.getElementById('step-requested');
+                    const stepAssigned = document.getElementById('step-assigned');
+                    const stepStarted = document.getElementById('step-started');
+                    const stepCompleted = document.getElementById('step-completed');
+
+                    stepRequested.className = 'trip-step completed';
+                    stepAssigned.className = 'trip-step completed';
+
+                    if (t.trip_status === 'CONFIRMED') {
+                        stepStarted.className = 'trip-step active';
+                        stepCompleted.className = 'trip-step';
+                        document.getElementById('active-action-container').style.display = 'block';
+                    } else if (t.trip_status === 'STARTED') {
+                        stepStarted.className = 'trip-step completed';
+                        stepCompleted.className = 'trip-step active';
+                        // Cannot cancel once started
+                        document.getElementById('active-action-container').style.display = 'none';
+                    } else if (t.trip_status === 'COMPLETED') {
+                        stepStarted.className = 'trip-step completed';
+                        stepCompleted.className = 'trip-step completed';
+                        showRatingScreen(t);
+                        return;
+                    }
+
+                    showContainer('active-trip-card');
+                }
+            } catch (err) {
+                console.error('Sync failed', err);
+            }
+        }
+
+        function showContainer(containerId) {
+            ['no-trip-card', 'pending-card', 'active-trip-card', 'rating-card'].forEach(id => {
+                document.getElementById(id).style.display = (id === containerId) ? 'block' : 'none';
+            });
+        }
+
+        function showRatingScreen(trip) {
+            document.getElementById('completed-fare-text').textContent = api.formatCurrency(trip.fare);
+            showContainer('rating-card');
+            if (pollTimer) clearInterval(pollTimer);
+        }
+
+        async function cancelActiveRide() {
+            if (!currentRequestId) return;
+            if (!confirm('Are you sure you want to cancel this ride?')) return;
+
+            try {
+                const res = await api.post('/rides/cancel', { request_id: currentRequestId });
+                if (res.success) {
+                    api.toast(res.message, 'success');
+                    await syncTripStatus();
+                }
+            } catch (err) {
+                api.toast(err.message || 'Failed to cancel ride', 'danger');
+            }
+        }
+
+        function initStarRating() {
+            const stars = document.querySelectorAll('#star-rating-widget span');
+            stars.forEach(star => {
+                const val = parseInt(star.getAttribute('data-star'), 10);
+                star.addEventListener('click', () => {
+                    selectedRating = val;
+                    updateStarUI(val);
+                });
+            });
+            updateStarUI(5);
+        }
+
+        function updateStarUI(val) {
+            const stars = document.querySelectorAll('#star-rating-widget span');
+            stars.forEach(star => {
+                const sVal = parseInt(star.getAttribute('data-star'), 10);
+                if (sVal <= val) {
+                    star.classList.add('selected');
+                } else {
+                    star.classList.remove('selected');
+                }
+            });
+        }
+
+        async function submitReview() {
+            if (!currentTripId) return;
+            const comment = document.getElementById('review-comment').value.trim();
+
+            const btn = document.getElementById('btn-submit-review');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            try {
+                const res = await api.post('/rides/rate', {
+                    trip_id: currentTripId,
+                    rating: selectedRating,
+                    comment
+                });
+
+                if (res.success) {
+                    api.toast('Thank you for your rating!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/passenger/trip-history.html';
+                    }, 1200);
+                }
+            } catch (err) {
+                api.toast(err.message || 'Failed to submit review', 'danger');
+                btn.disabled = false;
+                btn.textContent = 'Submit Rating & Review';
+            }
+        }
+    </script>
+</body>
+</html>

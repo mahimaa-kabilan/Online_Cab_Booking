@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - CabGo</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/index.html" class="brand-logo">
+                <span class="cab-badge">CAB</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/passenger/passenger-dashboard.html">Dashboard</a></li>
+                <li><a href="/passenger/book-ride.html">Book Ride</a></li>
+                <li><a href="/passenger/active-trip.html">Active Trip</a></li>
+                <li><a href="/passenger/trip-history.html">Trip History</a></li>
+                <li><a href="/passenger/profile.html" class="active">My Profile</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <main class="container-sm" style="max-width: 650px;">
+        <div class="card" style="box-shadow: var(--shadow-lg);">
+            <div class="card-header">
+                <div>
+                    <h2>Passenger Profile</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">View and update your personal travel details.</p>
+                </div>
+            </div>
+
+            <div id="alert-box" style="display: none; padding: 0.8rem; border-radius: 6px; margin-bottom: 1.25rem; font-size: 0.9rem;"></div>
+
+            <form id="profile-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="user-id">Account ID</label>
+                        <input type="text" id="user-id" class="form-control" disabled style="background:#f1f5f9;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email Address</label>
+                        <input type="email" id="email" class="form-control" disabled style="background:#f1f5f9;">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="name">Full Name *</label>
+                        <input type="text" id="name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="mobile">Mobile Number *</label>
+                        <input type="tel" id="mobile" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="default_address">Primary Address / Home Landmark</label>
+                    <input type="text" id="default_address" class="form-control" placeholder="124 Park Avenue, Metro City">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="emergency_contact">Emergency Contact Mobile</label>
+                    <input type="tel" id="emergency_contact" class="form-control" placeholder="9876543299">
+                </div>
+
+                <button type="submit" id="btn-save-profile" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem;">
+                    Save Profile Changes
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!api.requireAuth('PASSENGER')) return;
+
+            await loadProfile();
+        });
+
+        const profileForm = document.getElementById('profile-form');
+        const alertBox = document.getElementById('alert-box');
+        const saveBtn = document.getElementById('btn-save-profile');
+
+        async function loadProfile() {
+            try {
+                const res = await api.get('/profile');
+                if (res.success && res.profile) {
+                    const p = res.profile;
+                    document.getElementById('user-id').value = `#USR-${p.user_id}`;
+                    document.getElementById('email').value = p.email;
+                    document.getElementById('name').value = p.name || '';
+                    document.getElementById('mobile').value = p.mobile || '';
+                    document.getElementById('default_address').value = p.default_address || '';
+                    document.getElementById('emergency_contact').value = p.emergency_contact || '';
+                }
+            } catch (err) {
+                api.toast('Failed to load profile details', 'danger');
+            }
+        }
+
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            alertBox.style.display = 'none';
+
+            const name = document.getElementById('name').value.trim();
+            const mobile = document.getElementById('mobile').value.trim();
+            const default_address = document.getElementById('default_address').value.trim();
+            const emergency_contact = document.getElementById('emergency_contact').value.trim();
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+                const res = await api.put('/profile', {
+                    name,
+                    mobile,
+                    default_address,
+                    emergency_contact
+                });
+
+                if (res.success) {
+                    api.toast('Profile updated successfully!', 'success');
+                    // Update stored user
+                    const user = api.getUser();
+                    if (user) {
+                        user.name = name;
+                        user.mobile = mobile;
+                        api.setUser(user);
+                        initNavbar();
+                    }
+                }
+            } catch (err) {
+                alertBox.style.display = 'block';
+                alertBox.style.backgroundColor = '#fee2e2';
+                alertBox.style.color = '#b91c1c';
+                alertBox.textContent = err.message || 'Failed to update profile.';
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 Save Profile Changes';
+            }
+        });
+    </script>
+</body>
+</html>

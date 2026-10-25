@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passenger Dashboard - CabGo</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/index.html" class="brand-logo">
+                <span class="cab-badge">CAB</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/passenger/passenger-dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="/passenger/book-ride.html">Book Ride</a></li>
+                <li><a href="/passenger/active-trip.html">Active Trip</a></li>
+                <li><a href="/passenger/trip-history.html">Trip History</a></li>
+                <li><a href="/passenger/profile.html">My Profile</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Passenger Welcome Banner -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2>Hello, <span id="passenger-name">Passenger</span>! 👋</h2>
+                <p style="color: var(--text-secondary);">Manage your cab rides, check live trip status, and view past journeys.</p>
+            </div>
+            <div>
+                <a href="/passenger/book-ride.html" class="btn btn-primary btn-lg">🚖 Book a New Ride</a>
+            </div>
+        </div>
+
+        <!-- Active Trip Alert Banner (Dynamic via AJAX) -->
+        <div id="active-trip-banner" style="display: none; margin-bottom: 2rem;">
+            <div class="card" style="border-left: 5px solid var(--accent); background: #f0f7ff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+                            <span class="badge badge-started">Active Trip In Progress</span>
+                            <span id="banner-trip-status" class="badge badge-pending">PENDING</span>
+                        </div>
+                        <h3 id="banner-route" style="color: var(--text-primary); margin: 0.3rem 0;">Route: Downtown &rarr; Airport</h3>
+                        <p id="banner-driver-details" style="color: var(--text-secondary); font-size: 0.9rem;">
+                            Waiting for driver confirmation...
+                        </p>
+                    </div>
+                    <div>
+                        <a href="/passenger/active-trip.html" class="btn btn-accent">Open Live Tracker &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Overview Cards -->
+        <div class="grid-3" style="margin-bottom: 2rem;">
+            <div class="stat-card">
+                <div class="stat-icon">🚗</div>
+                <div>
+                    <div id="stat-total-trips" class="stat-val">0</div>
+                    <div class="stat-label">Total Rides Taken</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">📍</div>
+                <div>
+                    <div id="stat-address" class="stat-val" style="font-size: 1rem; font-weight: 600; word-break: break-all;">Not set</div>
+                    <div class="stat-label">Primary Address</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">📞</div>
+                <div>
+                    <div id="stat-emergency" class="stat-val" style="font-size: 1.1rem; font-weight: 600;">Not set</div>
+                    <div class="stat-label">Emergency Contact</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Trips Table -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Recent Rides</h3>
+                <a href="/passenger/trip-history.html" class="btn btn-sm btn-outline">View All &rarr;</a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Trip ID</th>
+                            <th>Pickup & Destination</th>
+                            <th>Driver</th>
+                            <th>Vehicle</th>
+                            <th>Fare</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-trips-tbody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                                Loading your recent rides via AJAX...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!api.requireAuth('PASSENGER')) return;
+
+            const user = api.getUser();
+            document.getElementById('passenger-name').textContent = user.name || 'Passenger';
+
+            await loadProfileStats();
+            await checkActiveTrip();
+            await loadRecentTrips();
+        });
+
+        async function loadProfileStats() {
+            try {
+                const res = await api.get('/profile');
+                if (res.success && res.profile) {
+                    const p = res.profile;
+                    document.getElementById('stat-address').textContent = p.default_address || 'None configured';
+                    document.getElementById('stat-emergency').textContent = p.emergency_contact || 'None';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function checkActiveTrip() {
+            try {
+                const res = await api.get('/rides/my-active');
+                if (res.success && res.active) {
+                    const banner = document.getElementById('active-trip-banner');
+                    banner.style.display = 'block';
+
+                    if (res.type === 'TRIP') {
+                        const t = res.trip;
+                        document.getElementById('banner-trip-status').className = `badge badge-${t.trip_status.toLowerCase()}`;
+                        document.getElementById('banner-trip-status').textContent = t.trip_status;
+                        document.getElementById('banner-route').textContent = `${t.pickup_location} → ${t.destination}`;
+                        document.getElementById('banner-driver-details').innerHTML = `
+                            Driver: <strong>${t.driver_name}</strong> (${t.driver_mobile}) | Cab: <strong>${t.vehicle_model}</strong> [${t.vehicle_number}] | Fare: <strong>${api.formatCurrency(t.fare)}</strong>
+                        `;
+                    } else if (res.type === 'REQUEST') {
+                        const r = res.request;
+                        document.getElementById('banner-trip-status').className = 'badge badge-pending';
+                        document.getElementById('banner-trip-status').textContent = 'LOOKING FOR DRIVER';
+                        document.getElementById('banner-route').textContent = `${r.pickup_location} → ${r.destination}`;
+                        document.getElementById('banner-driver-details').textContent = `Request #${r.request_id} submitted. Waiting for a nearby driver to accept.`;
+                    }
+                }
+            } catch (err) {
+                console.error('Active trip check failed', err);
+            }
+        }
+
+        async function loadRecentTrips() {
+            const tbody = document.getElementById('recent-trips-tbody');
+            try {
+                const res = await api.get('/rides/history');
+                if (res.success) {
+                    document.getElementById('stat-total-trips').textContent = res.count;
+
+                    if (res.trips.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                                    No trips taken yet. Ready for your first journey?
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    // Show up to 5 recent trips
+                    const recent = res.trips.slice(0, 5);
+                    tbody.innerHTML = recent.map(t => `
+                        <tr>
+                            <td>#${t.trip_id}</td>
+                            <td>
+                                <div style="font-weight:600;">${t.pickup_location}</div>
+                                <div style="font-size:0.8rem; color:var(--text-secondary);">→ ${t.destination}</div>
+                            </td>
+                            <td>${t.driver_name}</td>
+                            <td>${t.vehicle_model} <br><small style="color:var(--text-secondary);">${t.vehicle_number || ''}</small></td>
+                            <td><strong>${api.formatCurrency(t.fare)}</strong></td>
+                            <td><span class="badge badge-${t.trip_status.toLowerCase()}">${t.trip_status}</span></td>
+                            <td>
+                                <a href="/passenger/trip-history.html" class="btn btn-sm btn-outline">Details</a>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="7" style="color:var(--danger); text-align:center;">Failed to load trips.</td></tr>';
+            }
+        }
+    </script>
+</body>
+</html>

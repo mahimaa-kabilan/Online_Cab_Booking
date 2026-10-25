@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip History - CabGo</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/index.html" class="brand-logo">
+                <span class="cab-badge">CAB</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/passenger/passenger-dashboard.html">Dashboard</a></li>
+                <li><a href="/passenger/book-ride.html">Book Ride</a></li>
+                <li><a href="/passenger/active-trip.html">Active Trip</a></li>
+                <li><a href="/passenger/trip-history.html" class="active">Trip History</a></li>
+                <li><a href="/passenger/profile.html">My Profile</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2>Your Journey History</h2>
+                <p style="color: var(--text-secondary);">Comprehensive log of all completed and past cab bookings.</p>
+            </div>
+            <div>
+                <select id="status-filter" class="form-control" style="width: 180px;">
+                    <option value="ALL">All Journeys</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Trip #</th>
+                            <th>Date & Time</th>
+                            <th>Route (Pickup & Drop)</th>
+                            <th>Driver & Vehicle</th>
+                            <th>Distance</th>
+                            <th>Fare</th>
+                            <th>Status</th>
+                            <th>Your Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody">
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 2.5rem;">
+                                Loading your trip history via AJAX...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        let allTrips = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!api.requireAuth('PASSENGER')) return;
+
+            document.getElementById('status-filter').addEventListener('change', renderTrips);
+            await loadTrips();
+        });
+
+        async function loadTrips() {
+            try {
+                const res = await api.get('/rides/history');
+                if (res.success) {
+                    allTrips = res.trips || [];
+                    renderTrips();
+                }
+            } catch (err) {
+                document.getElementById('history-tbody').innerHTML = `
+                    <tr><td colspan="8" style="color:var(--danger); text-align:center;">Failed to load trip history: ${err.message}</td></tr>
+                `;
+            }
+        }
+
+        function renderTrips() {
+            const filter = document.getElementById('status-filter').value;
+            const tbody = document.getElementById('history-tbody');
+
+            let filtered = allTrips;
+            if (filter !== 'ALL') {
+                filtered = allTrips.filter(t => t.trip_status === filter);
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 3rem;">
+                            No trips matching the selected criteria.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(t => {
+                let ratingHtml = '-';
+                if (t.review_rating) {
+                    ratingHtml = `
+                        <div>
+                            <span style="color:#f59e0b; font-weight:700;">★ ${t.review_rating}/5</span>
+                            ${t.review_comment ? `<div style="font-size:0.75rem; color:var(--text-secondary); max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">"${t.review_comment}"</div>` : ''}
+                        </div>
+                    `;
+                } else if (t.trip_status === 'COMPLETED') {
+                    ratingHtml = `<span style="font-size:0.8rem; color:var(--text-light);">Not rated</span>`;
+                }
+
+                return `
+                    <tr>
+                        <td><strong>#${t.trip_id}</strong></td>
+                        <td style="font-size:0.85rem; color:var(--text-secondary); white-space:nowrap;">
+                            ${api.formatDate(t.start_time || t.requested_at)}
+                        </td>
+                        <td>
+                            <div style="font-weight:600; color:var(--text-primary);">${t.pickup_location}</div>
+                            <div style="font-size:0.82rem; color:var(--text-secondary);">→ ${t.destination}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight:600;">${t.driver_name}</div>
+                            <div style="font-size:0.8rem; color:var(--text-secondary);">${t.vehicle_model} (${t.vehicle_number || t.vehicle_type})</div>
+                        </td>
+                        <td>${t.distance_km} km</td>
+                        <td><strong style="color:var(--primary-dark);">${api.formatCurrency(t.fare)}</strong></td>
+                        <td><span class="badge badge-${t.trip_status.toLowerCase()}">${t.trip_status}</span></td>
+                        <td>${ratingHtml}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>

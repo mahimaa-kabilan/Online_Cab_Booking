@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a Cab - CabGo</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/index.html" class="brand-logo">
+                <span class="cab-badge">CAB</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/passenger/passenger-dashboard.html">Dashboard</a></li>
+                <li><a href="/passenger/book-ride.html" class="active">Book Ride</a></li>
+                <li><a href="/passenger/active-trip.html">Active Trip</a></li>
+                <li><a href="/passenger/trip-history.html">Trip History</a></li>
+                <li><a href="/passenger/profile.html">My Profile</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <main class="container-sm" style="max-width: 700px;">
+        <div class="card" style="box-shadow: var(--shadow-lg);">
+            <div class="card-header">
+                <div>
+                    <h2>Book Your Cab</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Fill in your travel points and confirm your ride request.</p>
+                </div>
+            </div>
+
+            <div id="alert-box" style="display: none; padding: 0.8rem; border-radius: 6px; margin-bottom: 1.25rem; font-size: 0.9rem;"></div>
+
+            <form id="book-ride-form">
+                <div class="form-group">
+                    <label class="form-label" for="pickup">Pickup Location *</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <select id="pickup-select" class="form-control" style="flex: 1;">
+                            <option value="">Select from Service Areas...</option>
+                        </select>
+                        <input type="text" id="pickup-custom" class="form-control" placeholder="Or enter exact street address..." style="flex: 1;" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="destination">Destination *</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <select id="dest-select" class="form-control" style="flex: 1;">
+                            <option value="">Select from Service Areas...</option>
+                        </select>
+                        <input type="text" id="dest-custom" class="form-control" placeholder="Or enter exact destination..." style="flex: 1;" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="vehicle_type">Vehicle Category</label>
+                        <select id="vehicle_type" class="form-control">
+                            <option value="SEDAN">Sedan (Comfortable, 4 Seater)</option>
+                            <option value="SUV">SUV (Spacious, 6 Seater)</option>
+                            <option value="HATCHBACK">Hatchback (Budget, 4 Seater)</option>
+                            <option value="AUTO">Auto Rickshaw (Fast City)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="distance">Trip Distance (km)</label>
+                        <input type="number" id="distance" class="form-control" value="6.5" min="1" max="150" step="0.5" required>
+                    </div>
+                </div>
+
+                <!-- Live Fare Estimate Card -->
+                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; margin: 1.5rem 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Estimated Fare</span>
+                            <div id="live-fare-display" style="font-size: 2rem; font-weight: 800; color: var(--primary-dark);">₹150.00</div>
+                        </div>
+                        <div style="text-align: right; font-size: 0.85rem; color: #475569;">
+                            <div>⏱️ Est. Time: <strong id="est-time-text">16 mins</strong></div>
+                            <div>🚗 Standard Rate Applied</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-submit-booking" class="btn btn-primary btn-block btn-lg">
+                    Confirm & Request Cab Now
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!api.requireAuth('PASSENGER')) return;
+
+            // Check if user already has an active trip
+            try {
+                const activeRes = await api.get('/rides/my-active');
+                if (activeRes.success && activeRes.active) {
+                    api.toast('You currently have an active ride request.', 'warning');
+                    setTimeout(() => {
+                        window.location.href = '/passenger/active-trip.html';
+                    }, 1200);
+                    return;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            await loadServiceAreas();
+
+            // Check query string parameters (from search-ride.html)
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('pickup')) document.getElementById('pickup-custom').value = params.get('pickup');
+            if (params.get('dest')) document.getElementById('dest-custom').value = params.get('dest');
+            if (params.get('type')) document.getElementById('vehicle_type').value = params.get('type');
+            if (params.get('dist')) document.getElementById('distance').value = params.get('dist');
+
+            // Trigger fare update
+            updateFareEstimate();
+        });
+
+        const pickupSelect = document.getElementById('pickup-select');
+        const destSelect = document.getElementById('dest-select');
+        const pickupCustom = document.getElementById('pickup-custom');
+        const destCustom = document.getElementById('dest-custom');
+        const vehicleTypeSelect = document.getElementById('vehicle_type');
+        const distanceInput = document.getElementById('distance');
+        const bookForm = document.getElementById('book-ride-form');
+        const alertBox = document.getElementById('alert-box');
+        const submitBtn = document.getElementById('btn-submit-booking');
+
+        pickupSelect.addEventListener('change', () => {
+            if (pickupSelect.value) {
+                pickupCustom.value = pickupSelect.value;
+                updateFareEstimate();
+            }
+        });
+
+        destSelect.addEventListener('change', () => {
+            if (destSelect.value) {
+                destCustom.value = destSelect.value;
+                updateFareEstimate();
+            }
+        });
+
+        vehicleTypeSelect.addEventListener('change', updateFareEstimate);
+        distanceInput.addEventListener('input', updateFareEstimate);
+
+        async function loadServiceAreas() {
+            try {
+                const res = await api.get('/service-areas');
+                if (res.success && res.service_areas) {
+                    res.service_areas.forEach(area => {
+                        const opt1 = document.createElement('option');
+                        opt1.value = area.area_name;
+                        opt1.textContent = `${area.area_name} (${area.city})`;
+                        pickupSelect.appendChild(opt1);
+
+                        const opt2 = document.createElement('option');
+                        opt2.value = area.area_name;
+                        opt2.textContent = `${area.area_name} (${area.city})`;
+                        destSelect.appendChild(opt2);
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function updateFareEstimate() {
+            const vType = vehicleTypeSelect.value;
+            const dist = parseFloat(distanceInput.value) || 5;
+
+            try {
+                const res = await api.post('/rides/estimate', {
+                    vehicle_type: vType,
+                    distance_km: dist
+                });
+
+                if (res.success && res.estimate) {
+                    document.getElementById('live-fare-display').textContent = api.formatCurrency(res.estimate.total_fare);
+                    document.getElementById('est-time-text').textContent = `${res.estimate.estimated_minutes} mins`;
+                }
+            } catch (err) {
+                console.error('Fare estimate update failed', err);
+            }
+        }
+
+        bookForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            alertBox.style.display = 'none';
+
+            const pickup = pickupCustom.value.trim();
+            const destination = destCustom.value.trim();
+            const vehicle_type = vehicleTypeSelect.value;
+            const distance_km = parseFloat(distanceInput.value) || 5;
+
+            if (!pickup || !destination) {
+                alertBox.style.display = 'block';
+                alertBox.style.backgroundColor = '#fee2e2';
+                alertBox.style.color = '#b91c1c';
+                alertBox.textContent = 'Please specify both pickup and destination.';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting Request...';
+
+            try {
+                const res = await api.post('/rides/book', {
+                    pickup_location: pickup,
+                    destination: destination,
+                    vehicle_type,
+                    distance_km
+                });
+
+                if (res.success) {
+                    api.toast(res.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = '/passenger/active-trip.html';
+                    }, 1000);
+                }
+            } catch (err) {
+                alertBox.style.display = 'block';
+                alertBox.style.backgroundColor = '#fee2e2';
+                alertBox.style.color = '#b91c1c';
+                alertBox.textContent = err.message || 'Booking request failed.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚖 Confirm & Request Cab Now';
+            }
+        });
+    </script>
+</body>
+</html>

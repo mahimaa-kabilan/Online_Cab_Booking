@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride Requests - CabGo Driver</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/index.html" class="brand-logo">
+                <span class="cab-badge">CAB</span> CabGo Driver
+            </a>
+            <ul class="nav-links">
+                <li><a href="/driver/driver-dashboard.html">Dashboard</a></li>
+                <li><a href="/driver/ride-requests.html" class="active">Ride Requests</a></li>
+                <li><a href="/driver/active-trip.html">Active Trip</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2>Incoming Ride Requests</h2>
+                <p style="color: var(--text-secondary);">Review nearby passenger booking requests and accept to start the trip.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span id="sync-badge" class="badge badge-active">● AUTO-POLLING</span>
+                <button id="btn-manual-refresh" class="btn btn-sm btn-outline">🔄 Refresh Now</button>
+            </div>
+        </div>
+
+        <!-- Requests Grid / List -->
+        <div id="requests-container" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="card" style="text-align: center; color: var(--text-secondary); padding: 3rem;">
+                Scanning for incoming passenger requests via AJAX...
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        let pollTimer = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!api.requireAuth('DRIVER')) return;
+
+            document.getElementById('btn-manual-refresh').addEventListener('click', loadRequests);
+
+            await loadRequests();
+            // Poll for new requests every 4 seconds
+            pollTimer = setInterval(loadRequests, 4000);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (pollTimer) clearInterval(pollTimer);
+        });
+
+        async function loadRequests() {
+            try {
+                const res = await api.get('/driver/requests');
+                if (res.success) {
+                    renderRequests(res.requests || []);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderRequests(requests) {
+            const container = document.getElementById('requests-container');
+
+            if (requests.length === 0) {
+                container.innerHTML = `
+                    <div class="card" style="text-align: center; padding: 3.5rem 1.5rem;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📡</div>
+                        <h3>No Pending Requests Right Now</h3>
+                        <p style="color: var(--text-secondary); max-width: 480px; margin: 0.5rem auto 1.5rem;">
+                            New booking requests from passengers will appear here automatically in real time. Make sure your duty status is set to Online.
+                        </p>
+                        <a href="/driver/driver-dashboard.html" class="btn btn-outline">Check Duty Status</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = requests.map(r => `
+                <div class="card" style="border-left: 5px solid var(--primary); box-shadow: var(--shadow-md); margin-bottom: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                        <!-- Passenger & Route Info -->
+                        <div style="flex: 1; min-width: 280px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span class="badge badge-pending">Request #${r.request_id}</span>
+                                <span class="badge badge-confirmed">${r.vehicle_type}</span>
+                                <small style="color: var(--text-secondary);">${api.formatDate(r.requested_at)}</small>
+                            </div>
+
+                            <div style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.3rem;">
+                                📍 Pickup: ${r.pickup_location}
+                            </div>
+                            <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent); margin-bottom: 0.8rem;">
+                                🎯 Destination: ${r.destination}
+                            </div>
+
+                            <div style="display: flex; gap: 1.5rem; font-size: 0.9rem; color: #475569;">
+                                <div>👤 Passenger: <strong>${r.passenger_name}</strong> (${r.passenger_mobile})</div>
+                                <div>📏 Distance: <strong>${r.distance_km} km</strong></div>
+                            </div>
+                        </div>
+
+                        <!-- Fare & Action Buttons -->
+                        <div style="text-align: right; min-width: 200px;">
+                            <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 700;">
+                                Estimated Earning
+                            </div>
+                            <div style="font-size: 2rem; font-weight: 800; color: var(--success); margin-bottom: 1rem;">
+                                ${api.formatCurrency(r.estimated_fare)}
+                            </div>
+
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                <button onclick="declineRequest(${r.request_id})" class="btn btn-secondary btn-sm">
+                                    Decline
+                                </button>
+                                <button onclick="acceptRequest(${r.request_id})" class="btn btn-primary btn-sm">
+                                    ✓ Accept Ride
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function acceptRequest(requestId) {
+            try {
+                const res = await api.post('/driver/accept-request', { request_id: requestId });
+                if (res.success) {
+                    api.toast('Ride Accepted! Redirecting to live active trip...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/driver/active-trip.html';
+                    }, 800);
+                }
+            } catch (err) {
+                api.toast(err.message || 'Failed to accept ride', 'danger');
+                await loadRequests();
+            }
+        }
+
+        async function declineRequest(requestId) {
+            try {
+                await api.post('/driver/reject-request', { request_id: requestId });
+                api.toast(`Request #${requestId} dismissed`, 'info');
+                await loadRequests();
+            } catch (err) {
+                api.toast('Failed to dismiss request', 'danger');
+            }
+        }
+    </script>
+</body>
+</html>

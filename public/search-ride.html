@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Rides & Fare Estimate - CabGo</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/index.html" class="brand-logo">
+                <span class="cab-badge">CAB</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/index.html">Home</a></li>
+                <li><a href="/search-ride.html" class="active">Search Rides</a></li>
+                <li><a href="/login.html">Login</a></li>
+                <li><a href="/register.html">Register</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div style="margin-bottom: 2rem;">
+            <h2>Search Rides & Instant Fare Estimator</h2>
+            <p style="color: var(--text-secondary);">Calculate journey costs upfront and inspect currently available active drivers in your area.</p>
+        </div>
+
+        <div class="grid-2">
+            <!-- Search & Calculator Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Trip Fare Calculator</h3>
+                    <span class="badge badge-confirmed">Instant Quote</span>
+                </div>
+
+                <form id="fare-estimate-form">
+                    <div class="form-group">
+                        <label class="form-label" for="pickup">Pickup Location</label>
+                        <select id="pickup" class="form-control" required>
+                            <option value="">Select Pickup Service Area</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="destination">Destination</label>
+                        <select id="destination" class="form-control" required>
+                            <option value="">Select Destination Service Area</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="vehicle_type">Vehicle Type</label>
+                            <select id="vehicle_type" class="form-control">
+                                <option value="SEDAN">Sedan (Comfortable)</option>
+                                <option value="SUV">SUV (Spacious 6-seater)</option>
+                                <option value="HATCHBACK">Hatchback (Budget Friendly)</option>
+                                <option value="AUTO">Auto (Quick city hop)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="distance">Estimated Distance (km)</label>
+                            <input type="number" id="distance" class="form-control" value="8.5" min="1" max="100" step="0.5" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-accent btn-block" style="margin-top: 0.5rem;">
+                        ⚡ Calculate Estimated Fare
+                    </button>
+                </form>
+
+                <!-- Fare Calculation Result Box -->
+                <div id="fare-result-box" style="display: none; margin-top: 1.5rem; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 0.9rem; color: var(--text-secondary);">Estimated Journey Total</span>
+                        <span id="res-total-fare" style="font-size: 1.8rem; font-weight: 800; color: var(--primary-dark);">₹0</span>
+                    </div>
+
+                    <div style="font-size: 0.88rem; color: #475569; display: flex; flex-direction: column; gap: 0.4rem; border-top: 1px dashed var(--border); padding-top: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Base Booking Charge:</span>
+                            <strong id="res-base-fare">₹0</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Distance Fare:</span>
+                            <strong id="res-distance-charge">₹0</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Estimated Duration:</span>
+                            <strong id="res-time-charge">0 mins</strong>
+                        </div>
+                    </div>
+
+                    <a id="btn-proceed-booking" href="/passenger/book-ride.html" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+                        Proceed to Book This Ride &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <!-- Available Active Drivers in Area -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Active Available Drivers</h3>
+                    <span id="drivers-count-badge" class="badge badge-active">Searching...</span>
+                </div>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                    Drivers currently online and ready to accept bookings:
+                </p>
+
+                <div id="drivers-list" style="display: flex; flex-direction: column; gap: 0.85rem;">
+                    <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Loading online drivers...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        let areas = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadAreas();
+            await loadDrivers();
+            // Trigger initial calculation
+            calculateEstimate();
+        });
+
+        async function loadAreas() {
+            try {
+                const res = await api.get('/service-areas');
+                if (res.success && res.service_areas) {
+                    areas = res.service_areas;
+                    const pickupSel = document.getElementById('pickup');
+                    const destSel = document.getElementById('destination');
+
+                    areas.forEach((a, idx) => {
+                        const opt1 = document.createElement('option');
+                        opt1.value = a.area_name;
+                        opt1.textContent = `${a.area_name} (${a.city})`;
+                        pickupSel.appendChild(opt1);
+
+                        const opt2 = document.createElement('option');
+                        opt2.value = a.area_name;
+                        opt2.textContent = `${a.area_name} (${a.city})`;
+                        destSel.appendChild(opt2);
+                    });
+
+                    // Set default demo selections
+                    if (pickupSel.options.length > 1) pickupSel.selectedIndex = 1;
+                    if (destSel.options.length > 2) destSel.selectedIndex = 2;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function loadDrivers() {
+            const listEl = document.getElementById('drivers-list');
+            const badgeEl = document.getElementById('drivers-count-badge');
+
+            try {
+                const res = await api.get('/rides/available-drivers');
+                if (res.success) {
+                    badgeEl.textContent = `${res.count} Drivers Online`;
+
+                    if (res.drivers.length === 0) {
+                        listEl.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; background: #f8fafc; border-radius: 8px;">
+                                <p style="color: var(--text-secondary);">No drivers are currently online.</p>
+                                <small>Sign in as a driver in another tab to go online!</small>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    listEl.innerHTML = res.drivers.map(d => `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+                            <div style="display: flex; align-items: center; gap: 0.9rem;">
+                                <div style="font-size: 1.8rem;">🚖</div>
+                                <div>
+                                    <div style="font-weight: 700;">${d.driver_name}</div>
+                                    <div style="font-size: 0.82rem; color: var(--text-secondary);">
+                                        ${d.model} • <strong style="color:var(--text-primary);">${d.vehicle_type}</strong> (${d.vehicle_number})
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span class="badge badge-pending" style="background:#fef3c7; color:#b45309;">⭐ ${parseFloat(d.rating).toFixed(1)}</span>
+                                <div style="font-size: 0.78rem; color: var(--success); font-weight: 600; margin-top: 0.2rem;">Ready to ride</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                listEl.innerHTML = '<div style="color:var(--danger)">Failed to load drivers.</div>';
+            }
+        }
+
+        document.getElementById('fare-estimate-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            calculateEstimate();
+        });
+
+        async function calculateEstimate() {
+            const pickup = document.getElementById('pickup').value;
+            const dest = document.getElementById('destination').value;
+            const vehicle_type = document.getElementById('vehicle_type').value;
+            const distance_km = parseFloat(document.getElementById('distance').value) || 5;
+
+            try {
+                const res = await api.post('/rides/estimate', {
+                    pickup_location: pickup,
+                    destination: dest,
+                    vehicle_type,
+                    distance_km
+                });
+
+                if (res.success && res.estimate) {
+                    const est = res.estimate;
+                    document.getElementById('res-total-fare').textContent = api.formatCurrency(est.total_fare);
+                    document.getElementById('res-base-fare').textContent = api.formatCurrency(est.base_fare);
+                    document.getElementById('res-distance-charge').textContent = `${api.formatCurrency(est.distance_charge)} (${est.distance_km} km @ ₹${est.per_km_rate}/km)`;
+                    document.getElementById('res-time-charge').textContent = `~${est.estimated_minutes} mins (City traffic)`;
+                    document.getElementById('fare-result-box').style.display = 'block';
+
+                    // Update proceed booking button link with params
+                    const bookUrl = `/passenger/book-ride.html?pickup=${encodeURIComponent(pickup)}&dest=${encodeURIComponent(dest)}&type=${vehicle_type}&dist=${distance_km}`;
+                    document.getElementById('btn-proceed-booking').href = bookUrl;
+                }
+            } catch (err) {
+                api.toast(err.message || 'Fare estimation failed', 'danger');
+            }
+        }
+    </script>
+</body>
+</html>

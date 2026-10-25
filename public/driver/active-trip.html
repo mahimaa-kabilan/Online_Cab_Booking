@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Trip Console - CabGo Driver</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/index.html" class="brand-logo">
+                <span class="cab-badge">CAB</span> CabGo Driver
+            </a>
+            <ul class="nav-links">
+                <li><a href="/driver/driver-dashboard.html">Dashboard</a></li>
+                <li><a href="/driver/ride-requests.html">Ride Requests</a></li>
+                <li><a href="/driver/active-trip.html" class="active">Active Trip</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <main class="container" style="max-width: 800px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h2>Driver Live Trip Console</h2>
+                <p style="color: var(--text-secondary);">Manage ongoing passenger transit and mark milestone completions.</p>
+            </div>
+            <button id="btn-sync" class="btn btn-sm btn-outline">🔄 Sync Status</button>
+        </div>
+
+        <!-- No Active Trip Message -->
+        <div id="no-trip-card" class="card" style="text-align: center; padding: 3rem 1.5rem; display: none;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🚖</div>
+            <h3>No Active Trip Assigned</h3>
+            <p style="color: var(--text-secondary); max-width: 450px; margin: 0.5rem auto 1.5rem;">
+                You are currently free and not assigned to an active trip. View pending requests to accept new rides!
+            </p>
+            <a href="/driver/ride-requests.html" class="btn btn-primary btn-lg">View Incoming Ride Requests</a>
+        </div>
+
+        <!-- Active Trip Management Card -->
+        <div id="active-trip-card" class="card" style="display: none; box-shadow: var(--shadow-xl); border: 2px solid var(--accent);">
+            <!-- Status Badge Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span id="trip-status-badge" class="badge badge-accepted">CONFIRMED</span>
+                    <span style="font-weight: 700; color: var(--text-primary);">Trip #<span id="trip-id-val">-</span></span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                    Category: <strong id="trip-type-val" style="color:var(--text-primary);">SEDAN</strong>
+                </div>
+            </div>
+
+            <!-- Passenger Details Box -->
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 0.75rem; color: #334155;">Passenger Information</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; font-weight: 700;">Name</div>
+                        <div id="passenger-name-val" style="font-weight: 700; font-size: 1.05rem;">-</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; font-weight: 700;">Mobile Phone</div>
+                        <div><a id="passenger-phone-link" href="#" style="font-weight: 700; color: var(--accent); font-size: 1.05rem;">-</a></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; font-weight: 700;">Emergency Contact</div>
+                        <div id="passenger-emergency-val" style="font-size: 0.95rem; color: var(--text-secondary);">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Route Details -->
+            <div style="background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 0.75rem;">
+                    <div style="font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; font-weight: 700;">Pickup Spot</div>
+                    <div id="pickup-val" style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">📍 -</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; font-weight: 700;">Destination Drop</div>
+                    <div id="destination-val" style="font-size: 1.1rem; font-weight: 700; color: var(--accent);">🎯 -</div>
+                </div>
+            </div>
+
+            <!-- Fare & Distance -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.75rem;">
+                <div>
+                    <span style="font-size: 0.85rem; color: #065f46; font-weight: 700; text-transform: uppercase;">Total Trip Fare</span>
+                    <div id="fare-val" style="font-size: 2rem; font-weight: 800; color: #047857;">₹0.00</div>
+                </div>
+                <div style="text-align: right; color: #065f46; font-size: 0.95rem;">
+                    <div>Estimated Distance: <strong id="distance-val">0 km</strong></div>
+                    <div>Payment Method: <strong>Online / Cash</strong></div>
+                </div>
+            </div>
+
+            <!-- Driver Action Controls -->
+            <div id="controls-confirmed" style="display: none;">
+                <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+                    Arrived at the passenger's pickup location? Click below to commence the trip.
+                </p>
+                <button id="btn-start-trip" class="btn btn-primary btn-block btn-lg">
+                    ▶ Start Trip (Passenger Onboard)
+                </button>
+            </div>
+
+            <div id="controls-started" style="display: none;">
+                <div style="background: #eff6ff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #bfdbfe;">
+                    <strong>🚕 Trip in progress!</strong> Drive safely to the passenger's destination.
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="payment-method-select">Collected Payment Method</label>
+                    <select id="payment-method-select" class="form-control" style="max-width: 300px;">
+                        <option value="UPI">UPI / Digital (GPay, PhonePe)</option>
+                        <option value="CASH">Cash Payment</option>
+                        <option value="CARD">Debit / Credit Card</option>
+                        <option value="WALLET">In-App Wallet</option>
+                    </select>
+                </div>
+
+                <button id="btn-complete-trip" class="btn btn-success btn-block btn-lg">
+                    🏁 Complete Trip & Confirm Payment
+                </button>
+            </div>
+        </div>
+
+        <!-- Success Completion Box -->
+        <div id="completion-box" class="card" style="display: none; text-align: center; border: 2px solid var(--success); padding: 3rem 1.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+            <h2>Trip Completed Successfully!</h2>
+            <p style="color: var(--text-secondary); margin: 0.5rem 0 1.5rem;">
+                Payment of <strong id="completed-fare-display" style="color: var(--success); font-size: 1.3rem;">₹0</strong> has been confirmed and credited to your earnings.
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="/driver/driver-dashboard.html" class="btn btn-primary">Return to Dashboard</a>
+                <a href="/driver/ride-requests.html" class="btn btn-outline">Check Next Requests</a>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        let currentTrip = null;
+        let syncInterval = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!api.requireAuth('DRIVER')) return;
+
+            document.getElementById('btn-sync').addEventListener('click', loadActiveTrip);
+            document.getElementById('btn-start-trip').addEventListener('click', startTrip);
+            document.getElementById('btn-complete-trip').addEventListener('click', completeTrip);
+
+            await loadActiveTrip();
+            syncInterval = setInterval(loadActiveTrip, 5000);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (syncInterval) clearInterval(syncInterval);
+        });
+
+        async function loadActiveTrip() {
+            try {
+                const res = await api.get('/driver/active-trip');
+                if (!res.success || !res.active) {
+                    showSection('no-trip-card');
+                    return;
+                }
+
+                currentTrip = res.trip;
+                const t = res.trip;
+
+                document.getElementById('trip-id-val').textContent = t.trip_id;
+                document.getElementById('trip-type-val').textContent = t.vehicle_type || 'SEDAN';
+                document.getElementById('passenger-name-val').textContent = t.passenger_name;
+                document.getElementById('passenger-phone-link').textContent = t.passenger_mobile;
+                document.getElementById('passenger-phone-link').href = `tel:${t.passenger_mobile}`;
+                document.getElementById('passenger-emergency-val').textContent = t.emergency_contact || 'None';
+
+                document.getElementById('pickup-val').textContent = `📍 ${t.pickup_location}`;
+                document.getElementById('destination-val').textContent = `🎯 ${t.destination}`;
+                document.getElementById('fare-val').textContent = api.formatCurrency(t.fare);
+                document.getElementById('distance-val').textContent = `${t.distance_km} km`;
+
+                const badge = document.getElementById('trip-status-badge');
+                badge.className = `badge badge-${t.trip_status.toLowerCase()}`;
+                badge.textContent = t.trip_status;
+
+                if (t.trip_status === 'CONFIRMED') {
+                    document.getElementById('controls-confirmed').style.display = 'block';
+                    document.getElementById('controls-started').style.display = 'none';
+                } else if (t.trip_status === 'STARTED') {
+                    document.getElementById('controls-confirmed').style.display = 'none';
+                    document.getElementById('controls-started').style.display = 'block';
+                }
+
+                showSection('active-trip-card');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function showSection(sectionId) {
+            ['no-trip-card', 'active-trip-card', 'completion-box'].forEach(id => {
+                document.getElementById(id).style.display = (id === sectionId) ? 'block' : 'none';
+            });
+        }
+
+        async function startTrip() {
+            if (!currentTrip) return;
+            const btn = document.getElementById('btn-start-trip');
+            btn.disabled = true;
+            btn.textContent = 'Starting Trip...';
+
+            try {
+                const res = await api.post('/driver/start-trip', { trip_id: currentTrip.trip_id });
+                if (res.success) {
+                    api.toast(res.message, 'success');
+                    await loadActiveTrip();
+                }
+            } catch (err) {
+                api.toast(err.message || 'Failed to start trip', 'danger');
+                btn.disabled = false;
+                btn.textContent = '▶ Start Trip (Passenger Onboard)';
+            }
+        }
+
+        async function completeTrip() {
+            if (!currentTrip) return;
+            if (!confirm(`Confirm completion of Trip #${currentTrip.trip_id} and payment of ₹${currentTrip.fare}?`)) return;
+
+            const payment_method = document.getElementById('payment-method-select').value;
+            const btn = document.getElementById('btn-complete-trip');
+            btn.disabled = true;
+            btn.textContent = 'Processing Payment...';
+
+            try {
+                const res = await api.post('/driver/complete-trip', {
+                    trip_id: currentTrip.trip_id,
+                    payment_method
+                });
+
+                if (res.success) {
+                    api.toast(res.message, 'success');
+                    document.getElementById('completed-fare-display').textContent = api.formatCurrency(res.fare);
+                    showSection('completion-box');
+                    if (syncInterval) clearInterval(syncInterval);
+                }
+            } catch (err) {
+                api.toast(err.message || 'Failed to complete trip', 'danger');
+                btn.disabled = false;
+                btn.textContent = '🏁 Complete Trip & Confirm Payment';
+            }
+        }
+    </script>
+</body>
+</html>

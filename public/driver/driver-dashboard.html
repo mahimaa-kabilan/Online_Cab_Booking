@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard - CabGo</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/index.html" class="brand-logo">
+                <span class="cab-badge">CAB</span> CabGo Driver
+            </a>
+            <ul class="nav-links">
+                <li><a href="/driver/driver-dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="/driver/ride-requests.html">Ride Requests <span id="nav-requests-badge" class="badge badge-pending" style="display:none;">0</span></a></li>
+                <li><a href="/driver/active-trip.html">Active Trip</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Driver Profile & Status Header -->
+        <div class="card" style="box-shadow: var(--shadow-md); margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 1.25rem;">
+                    <div style="width: 64px; height: 64px; border-radius: 50%; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 2rem;">
+                        👨‍✈️
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <h2 id="driver-name" style="margin: 0;">Driver Name</h2>
+                            <span id="verification-badge" class="badge badge-active">VERIFIED</span>
+                        </div>
+                        <p id="vehicle-details" style="color: var(--text-secondary); margin-top: 0.2rem; font-size: 0.95rem;">
+                            Loading vehicle information...
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Online / Offline Availability Switcher -->
+                <div style="display: flex; align-items: center; gap: 1rem; background: #f8fafc; padding: 0.75rem 1.25rem; border-radius: 12px; border: 1px solid var(--border);">
+                    <div>
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Duty Status</div>
+                        <span id="availability-badge" class="badge badge-offline">OFFLINE</span>
+                    </div>
+                    <button id="btn-toggle-status" class="btn btn-success btn-sm">
+                        Go Online
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ongoing Trip Alert Box (If Active) -->
+        <div id="active-trip-card" style="display: none; margin-bottom: 2rem;">
+            <div class="card" style="border: 2px solid var(--accent); background: #f0f7ff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <span class="badge badge-started">Trip Currently In Progress</span>
+                        <h3 style="margin: 0.4rem 0;">You have an active assigned passenger!</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                            Navigate to the live trip console to start or complete this ride.
+                        </p>
+                    </div>
+                    <a href="/driver/active-trip.html" class="btn btn-accent btn-lg">Open Active Trip Console &rarr;</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Grid -->
+        <div class="grid-3" style="margin-bottom: 2rem;">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fef3c7; color: #b45309;">⭐</div>
+                <div>
+                    <div id="stat-rating" class="stat-val">5.0</div>
+                    <div class="stat-label">Driver Rating</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green">💰</div>
+                <div>
+                    <div id="stat-earnings" class="stat-val">₹0.00</div>
+                    <div class="stat-label">Total Earnings</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon blue">🏁</div>
+                <div>
+                    <div id="stat-completed-trips" class="stat-val">0</div>
+                    <div class="stat-label">Trips Completed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions & Pending Requests Alert -->
+        <div class="grid-2">
+            <!-- Pending Requests Card -->
+            <div class="card" style="border-top: 4px solid var(--primary);">
+                <div class="card-header">
+                    <h3>Incoming Ride Requests</h3>
+                    <span id="pending-count-badge" class="badge badge-pending">0 Pending</span>
+                </div>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.25rem;">
+                    Nearby passenger ride bookings waiting for driver acceptance.
+                </p>
+                <div id="pending-preview-list" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Checking for ride requests...</div>
+                </div>
+                <a href="/driver/ride-requests.html" class="btn btn-primary btn-block">
+                    View All Ride Requests &rarr;
+                </a>
+            </div>
+
+            <!-- Recent Completed Trips & Reviews -->
+            <div class="card" style="border-top: 4px solid var(--accent);">
+                <div class="card-header">
+                    <h3>Recent Trip Earnings</h3>
+                    <span class="badge badge-confirmed">History</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Passenger</th>
+                                <th>Route</th>
+                                <th>Fare</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody id="driver-trips-tbody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 1.5rem;">
+                                    Loading trip history...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+    <script>
+        let isAvailable = false;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!api.requireAuth('DRIVER')) return;
+
+            document.getElementById('btn-toggle-status').addEventListener('click', toggleAvailability);
+
+            await loadDriverProfile();
+            await loadEarnings();
+            await checkPendingRequests();
+        });
+
+        async function loadDriverProfile() {
+            try {
+                const res = await api.get('/driver/status');
+                if (res.success && res.driver) {
+                    const d = res.driver;
+                    document.getElementById('driver-name').textContent = d.name;
+                    document.getElementById('vehicle-details').innerHTML = `
+                        Vehicle: <strong>${d.model || 'Standard'}</strong> (${d.vehicle_type || 'SEDAN'}) • Plate: <code>${d.vehicle_number || 'N/A'}</code> • License: <code>${d.license_no || 'N/A'}</code>
+                    `;
+                    document.getElementById('stat-rating').textContent = `⭐ ${parseFloat(d.rating || 5).toFixed(2)}`;
+
+                    isAvailable = !!d.is_available;
+                    updateAvailabilityUI(isAvailable);
+
+                    if (res.has_active_trip) {
+                        document.getElementById('active-trip-card').style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function updateAvailabilityUI(available) {
+            const badge = document.getElementById('availability-badge');
+            const btn = document.getElementById('btn-toggle-status');
+
+            if (available) {
+                badge.className = 'badge badge-online';
+                badge.textContent = 'ONLINE';
+                btn.className = 'btn btn-outline btn-sm';
+                btn.textContent = 'Go Offline';
+            } else {
+                badge.className = 'badge badge-offline';
+                badge.textContent = 'OFFLINE';
+                btn.className = 'btn btn-success btn-sm';
+                btn.textContent = 'Go Online';
+            }
+        }
+
+        async function toggleAvailability() {
+            const newTarget = !isAvailable;
+            try {
+                const res = await api.post('/driver/toggle-availability', { is_available: newTarget });
+                if (res.success) {
+                    isAvailable = res.is_available;
+                    updateAvailabilityUI(isAvailable);
+                    api.toast(res.message, isAvailable ? 'success' : 'info');
+                }
+            } catch (err) {
+                api.toast(err.message || 'Failed to toggle availability', 'danger');
+            }
+        }
+
+        async function loadEarnings() {
+            try {
+                const res = await api.get('/driver/earnings');
+                if (res.success) {
+                    document.getElementById('stat-earnings').textContent = api.formatCurrency(res.totalEarnings || 0);
+                    document.getElementById('stat-completed-trips').textContent = res.completedTripsCount || 0;
+
+                    const tbody = document.getElementById('driver-trips-tbody');
+                    if (!res.trips || res.trips.length === 0) {
+                        tbody.innerHTML = `
+                            <tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 1.5rem;">No completed trips yet.</td></tr>
+                        `;
+                        return;
+                    }
+
+                    tbody.innerHTML = res.trips.slice(0, 4).map(t => `
+                        <tr>
+                            <td><strong>${t.passenger_name}</strong></td>
+                            <td style="font-size:0.82rem;">${t.pickup_location} → ${t.destination}</td>
+                            <td><strong style="color:var(--success);">${api.formatCurrency(t.fare)}</strong></td>
+                            <td>${t.passenger_rating ? `⭐ ${t.passenger_rating}` : '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function checkPendingRequests() {
+            try {
+                const res = await api.get('/driver/requests');
+                if (res.success) {
+                    const count = res.count || 0;
+                    document.getElementById('pending-count-badge').textContent = `${count} Pending`;
+
+                    const navBadge = document.getElementById('nav-requests-badge');
+                    if (count > 0) {
+                        navBadge.style.display = 'inline-block';
+                        navBadge.textContent = count;
+                    } else {
+                        navBadge.style.display = 'none';
+                    }
+
+                    const previewList = document.getElementById('pending-preview-list');
+                    if (count === 0) {
+                        previewList.innerHTML = `
+                            <div style="text-align: center; color: var(--text-secondary); padding: 1rem;">
+                                No pending requests at the moment. Keep your status Online!
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    previewList.innerHTML = res.requests.slice(0, 2).map(r => `
+                        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.9rem;">${r.pickup_location} &rarr; ${r.destination}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">${r.passenger_name} • ${r.distance_km} km</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 700; color: var(--primary-dark);">${api.formatCurrency(r.estimated_fare)}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "online-cab-booking-system",
+  "version": "1.0.0",
+  "description": "Online Cab Booking System built with pure Node.js (no web frameworks), MySQL, HTML/CSS, Vanilla JS, and Fetch API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "setup-db": "node scripts/init-db.js"
+  },
+  "dependencies": {
+    "mysql2": "^3.12.0"
+  }
+}

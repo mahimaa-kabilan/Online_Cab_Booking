@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CabGo - Online Cab Booking System</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="auth-page">
+
+    <header class="auth-header">
+        <a href="/index.html" class="brand-logo">
+            <span class="cab-badge">CAB</span> CabGo
+        </a>
+    </header>
+
+    <main class="auth-wrapper">
+        <div class="auth-box">
+            <!-- Tabs: Sign In / Sign Up -->
+            <div class="auth-tabs">
+                <button type="button" id="tab-btn-login" class="auth-tab-btn active" onclick="switchAuthTab('LOGIN')">
+                    Sign In
+                </button>
+                <button type="button" id="tab-btn-signup" class="auth-tab-btn" onclick="switchAuthTab('SIGNUP')">
+                    Sign Up
+                </button>
+            </div>
+
+            <div class="auth-content">
+                <div id="alert-box" class="alert-message" style="display: none;"></div>
+
+                <!-- 1. LOGIN SECTION -->
+                <div id="section-login">
+                    <div class="login-top-bar">
+                        <button type="button" id="btn-toggle-employee" class="employee-link" onclick="toggleEmployeeMode()">
+                            💼 <span id="employee-btn-text">Employee Login</span>
+                        </button>
+                    </div>
+
+                    <h2 id="login-title">Welcome Back</h2>
+                    
+                    <div id="driver-switch-container">
+                        <a id="link-switch-driver-login" class="driver-switch-link" onclick="toggleDriverLoginRole()">
+                            Are you a Driver? Click here for Driver Login &rarr;
+                        </a>
+                    </div>
+
+                    <form id="form-login">
+                        <div class="form-group">
+                            <label class="form-label" for="login-email">Email Address</label>
+                            <input type="email" id="login-email" class="form-control" placeholder="name@example.com" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="login-password">Password</label>
+                            <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+                        </div>
+
+                        <button type="submit" id="btn-submit-login" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+                            Sign In as Passenger
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 2. SIGN UP SECTION -->
+                <div id="section-signup" style="display: none;">
+                    <h2 id="signup-title">Create Account</h2>
+
+                    <div>
+                        <a id="link-switch-driver-signup" class="driver-switch-link" onclick="toggleDriverSignupRole()">
+                            Are you a Driver? Register as a Driver Partner &rarr;
+                        </a>
+                    </div>
+
+                    <form id="form-signup">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="reg-name">Full Name *</label>
+                                <input type="text" id="reg-name" class="form-control" placeholder="John Doe" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="reg-mobile">Mobile Number *</label>
+                                <input type="tel" id="reg-mobile" class="form-control" placeholder="9876543210" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="reg-email">Email Address *</label>
+                                <input type="email" id="reg-email" class="form-control" placeholder="user@example.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="reg-password">Password *</label>
+                                <input type="password" id="reg-password" class="form-control" placeholder="At least 6 characters" minlength="6" required>
+                            </div>
+                        </div>
+
+                        <!-- Passenger Fields -->
+                        <div id="signup-passenger-fields">
+                            <div class="form-group">
+                                <label class="form-label" for="reg-address">Default Address (Home / Work)</label>
+                                <input type="text" id="reg-address" class="form-control" placeholder="124 Park Avenue">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="reg-emergency">Emergency Contact Phone</label>
+                                <input type="tel" id="reg-emergency" class="form-control" placeholder="9876543299">
+                            </div>
+                        </div>
+
+                        <!-- Driver Fields -->
+                        <div id="signup-driver-fields" style="display: none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="reg-license-no">License Number *</label>
+                                    <input type="text" id="reg-license-no" class="form-control" placeholder="DL-042011001234">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="reg-license-expiry">License Expiry *</label>
+                                    <input type="date" id="reg-license-expiry" class="form-control">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="reg-vehicle-number">Vehicle Plate Number *</label>
+                                    <input type="text" id="reg-vehicle-number" class="form-control" placeholder="DL-01-AB-1234">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="reg-vehicle-type">Vehicle Category *</label>
+                                    <select id="reg-vehicle-type" class="form-control">
+                                        <option value="SEDAN">Sedan</option>
+                                        <option value="SUV">SUV</option>
+                                        <option value="HATCHBACK">Hatchback</option>
+                                        <option value="AUTO">Auto Rickshaw</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="reg-model">Vehicle Model *</label>
+                                    <input type="text" id="reg-model" class="form-control" placeholder="e.g. Toyota Camry">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="reg-capacity">Capacity</label>
+                                    <input type="number" id="reg-capacity" class="form-control" value="4" min="1" max="8">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-submit-signup" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+                            Create Passenger Account
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script>
+        let loginRole = 'PASSENGER';
+        let signupRole = 'PASSENGER';
+
+        const alertBox = document.getElementById('alert-box');
+
+        function showAlert(msg, isError = true) {
+            alertBox.style.display = 'block';
+            alertBox.className = `alert-message ${isError ? 'alert-error' : 'alert-success'}`;
+            alertBox.textContent = msg;
+        }
+
+        function hideAlert() {
+            alertBox.style.display = 'none';
+        }
+
+        function switchAuthTab(tab) {
+            hideAlert();
+            const btnLogin = document.getElementById('tab-btn-login');
+            const btnSignup = document.getElementById('tab-btn-signup');
+            const secLogin = document.getElementById('section-login');
+            const secSignup = document.getElementById('section-signup');
+
+            if (tab === 'LOGIN') {
+                btnLogin.classList.add('active');
+                btnSignup.classList.remove('active');
+                secLogin.style.display = 'block';
+                secSignup.style.display = 'none';
+            } else {
+                btnSignup.classList.add('active');
+                btnLogin.classList.remove('active');
+                secSignup.style.display = 'block';
+                secLogin.style.display = 'none';
+            }
+        }
+
+        function toggleDriverLoginRole() {
+            hideAlert();
+            setLoginRole(loginRole === 'PASSENGER' ? 'DRIVER' : 'PASSENGER');
+        }
+
+        function toggleEmployeeMode() {
+            hideAlert();
+            setLoginRole(loginRole === 'EMPLOYEE' ? 'PASSENGER' : 'EMPLOYEE');
+        }
+
+        function setLoginRole(role) {
+            loginRole = role;
+            const switchContainer = document.getElementById('driver-switch-container');
+            const switchLink = document.getElementById('link-switch-driver-login');
+            const employeeBtn = document.getElementById('btn-toggle-employee');
+            const employeeBtnText = document.getElementById('employee-btn-text');
+            const submitBtn = document.getElementById('btn-submit-login');
+            const loginTitle = document.getElementById('login-title');
+
+            if (role === 'EMPLOYEE') {
+                switchContainer.style.display = 'none';
+                employeeBtn.classList.add('active-employee');
+                employeeBtnText.textContent = '← Back to Customer Login';
+                submitBtn.className = 'btn btn-accent btn-block btn-lg';
+                submitBtn.textContent = 'Sign In to Employee Portal';
+                loginTitle.textContent = 'Employee Portal Login';
+            } else if (role === 'DRIVER') {
+                switchContainer.style.display = 'block';
+                switchLink.textContent = 'Are you a Passenger? Click here for Passenger Login →';
+                employeeBtn.classList.remove('active-employee');
+                employeeBtnText.textContent = 'Employee Login';
+                submitBtn.className = 'btn btn-primary btn-block btn-lg';
+                submitBtn.textContent = 'Sign In as Driver';
+                loginTitle.textContent = 'Driver Partner Sign In';
+            } else {
+                switchContainer.style.display = 'block';
+                switchLink.textContent = 'Are you a Driver? Click here for Driver Login →';
+                employeeBtn.classList.remove('active-employee');
+                employeeBtnText.textContent = 'Employee Login';
+                submitBtn.className = 'btn btn-primary btn-block btn-lg';
+                submitBtn.textContent = 'Sign In as Passenger';
+                loginTitle.textContent = 'Welcome Back';
+            }
+        }
+
+        function toggleDriverSignupRole() {
+            hideAlert();
+            setSignupRole(signupRole === 'PASSENGER' ? 'DRIVER' : 'PASSENGER');
+        }
+
+        function setSignupRole(role) {
+            signupRole = role;
+            const switchLink = document.getElementById('link-switch-driver-signup');
+            const passFields = document.getElementById('signup-passenger-fields');
+            const driverFields = document.getElementById('signup-driver-fields');
+            const submitBtn = document.getElementById('btn-submit-signup');
+            const title = document.getElementById('signup-title');
+
+            if (role === 'DRIVER') {
+                switchLink.textContent = 'Registering as Passenger? Switch here →';
+                passFields.style.display = 'none';
+                driverFields.style.display = 'block';
+                submitBtn.textContent = 'Register as Driver Partner';
+                title.textContent = 'Driver Registration';
+            } else {
+                switchLink.textContent = 'Are you a Driver? Register as a Driver Partner →';
+                passFields.style.display = 'block';
+                driverFields.style.display = 'none';
+                submitBtn.textContent = 'Create Passenger Account';
+                title.textContent = 'Create Account';
+            }
+        }
+
+        // AJAX Form Submissions
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert();
+
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const submitBtn = document.getElementById('btn-submit-login');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Authenticating...';
+
+            try {
+                const res = await api.post('/auth/login', { email, password });
+                if (res.success && res.token) {
+                    api.setToken(res.token);
+                    api.setUser(res.user);
+                    showAlert('Login successful! Redirecting...', false);
+
+                    setTimeout(() => {
+                        if (res.user.role === 'DRIVER') {
+                            window.location.href = '/driver/driver-dashboard.html';
+                        } else if (res.user.role === 'PASSENGER') {
+                            window.location.href = '/passenger/passenger-dashboard.html';
+                        } else {
+                            showAlert(`Authenticated as ${res.user.role}!`, false);
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = `Logged in as ${res.user.role}`;
+                        }
+                    }, 800);
+                }
+            } catch (err) {
+                showAlert(err.message || 'Login failed. Please check credentials.');
+                submitBtn.disabled = false;
+                setLoginRole(loginRole);
+            }
+        });
+
+        document.getElementById('form-signup').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert();
+
+            const payload = {
+                name: document.getElementById('reg-name').value.trim(),
+                mobile: document.getElementById('reg-mobile').value.trim(),
+                email: document.getElementById('reg-email').value.trim(),
+                password: document.getElementById('reg-password').value,
+                role: signupRole
+            };
+
+            if (signupRole === 'PASSENGER') {
+                payload.default_address = document.getElementById('reg-address').value.trim();
+                payload.emergency_contact = document.getElementById('reg-emergency').value.trim();
+            } else {
+                payload.license_no = document.getElementById('reg-license-no').value.trim();
+                payload.license_expiry = document.getElementById('reg-license-expiry').value;
+                payload.vehicle_number = document.getElementById('reg-vehicle-number').value.trim();
+                payload.vehicle_type = document.getElementById('reg-vehicle-type').value;
+                payload.model = document.getElementById('reg-model').value.trim();
+                payload.capacity = parseInt(document.getElementById('reg-capacity').value, 10) || 4;
+
+                if (!payload.license_no || !payload.vehicle_number || !payload.model) {
+                    showAlert('Please provide driving license and vehicle registration details.');
+                    return;
+                }
+            }
+
+            const submitBtn = document.getElementById('btn-submit-signup');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Account...';
+
+            try {
+                const res = await api.post('/auth/register', payload);
+                if (res.success && res.token) {
+                    api.setToken(res.token);
+                    api.setUser(res.user);
+                    showAlert('Registration successful! Redirecting...', false);
+
+                    setTimeout(() => {
+                        if (res.user.role === 'DRIVER') {
+                            window.location.href = '/driver/driver-dashboard.html';
+                        } else {
+                            window.location.href = '/passenger/passenger-dashboard.html';
+                        }
+                    }, 800);
+                }
+            } catch (err) {
+                showAlert(err.message || 'Registration failed. Please try again.');
+                submitBtn.disabled = false;
+                setSignupRole(signupRole);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            switchAuthTab('LOGIN');
+            setLoginRole('PASSENGER');
+            setSignupRole('PASSENGER');
+        });
+    </script>
+</body>
+</html>
