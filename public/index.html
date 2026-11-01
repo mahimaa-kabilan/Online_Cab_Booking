@@ -280,21 +280,20 @@
             submitBtn.textContent = 'Authenticating...';
 
             try {
-                const res = await api.post('/auth/login', { email, password });
+                const res = await api.post('/auth/login', { email, password, role: loginRole });
                 if (res.success && res.token) {
                     api.setToken(res.token);
                     api.setUser(res.user);
                     showAlert('Login successful! Redirecting...', false);
 
                     setTimeout(() => {
-                        if (res.user.role === 'DRIVER') {
+                        const role = res.user.role;
+                        if (role === 'ADMIN' || role === 'SUPER ADMIN') {
+                            window.location.href = '/admin/admin-dashboard.html';
+                        } else if (role === 'DRIVER') {
                             window.location.href = '/driver/driver-dashboard.html';
-                        } else if (res.user.role === 'PASSENGER') {
-                            window.location.href = '/passenger/passenger-dashboard.html';
                         } else {
-                            showAlert(`Authenticated as ${res.user.role}!`, false);
-                            submitBtn.disabled = false;
-                            submitBtn.textContent = `Logged in as ${res.user.role}`;
+                            window.location.href = '/passenger/passenger-dashboard.html';
                         }
                     }, 800);
                 }
@@ -330,6 +329,7 @@
 
                 if (!payload.license_no || !payload.vehicle_number || !payload.model) {
                     showAlert('Please provide driving license and vehicle registration details.');
+                    submitBtn.disabled = false;
                     return;
                 }
             }
