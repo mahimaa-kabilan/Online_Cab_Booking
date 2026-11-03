@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CabGo - Online Cab Booking System</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
+
 <body class="auth-page">
 
     <header class="auth-header">
@@ -32,13 +34,14 @@
                 <!-- 1. LOGIN SECTION -->
                 <div id="section-login">
                     <div class="login-top-bar">
-                        <button type="button" id="btn-toggle-employee" class="employee-link" onclick="toggleEmployeeMode()">
+                        <button type="button" id="btn-toggle-employee" class="employee-link"
+                            onclick="toggleEmployeeMode()">
                             💼 <span id="employee-btn-text">Employee Login</span>
                         </button>
                     </div>
 
                     <h2 id="login-title">Welcome Back</h2>
-                    
+
                     <div id="driver-switch-container">
                         <a id="link-switch-driver-login" class="driver-switch-link" onclick="toggleDriverLoginRole()">
                             Are you a Driver? Click here for Driver Login &rarr;
@@ -48,15 +51,18 @@
                     <form id="form-login">
                         <div class="form-group">
                             <label class="form-label" for="login-email">Email Address</label>
-                            <input type="email" id="login-email" class="form-control" placeholder="name@example.com" required>
+                            <input type="email" id="login-email" class="form-control" placeholder="name@example.com"
+                                required>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label" for="login-password">Password</label>
-                            <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+                            <input type="password" id="login-password" class="form-control" placeholder="••••••••"
+                                required>
                         </div>
 
-                        <button type="submit" id="btn-submit-login" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+                        <button type="submit" id="btn-submit-login" class="btn btn-primary btn-block btn-lg"
+                            style="margin-top: 1rem;">
                             Sign In as Passenger
                         </button>
                     </form>
@@ -80,18 +86,21 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="reg-mobile">Mobile Number *</label>
-                                <input type="tel" id="reg-mobile" class="form-control" placeholder="9876543210" required>
+                                <input type="tel" id="reg-mobile" class="form-control" placeholder="9876543210"
+                                    required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label" for="reg-email">Email Address *</label>
-                                <input type="email" id="reg-email" class="form-control" placeholder="user@example.com" required>
+                                <input type="email" id="reg-email" class="form-control" placeholder="user@example.com"
+                                    required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="reg-password">Password *</label>
-                                <input type="password" id="reg-password" class="form-control" placeholder="At least 6 characters" minlength="6" required>
+                                <input type="password" id="reg-password" class="form-control"
+                                    placeholder="At least 6 characters" minlength="6" required>
                             </div>
                         </div>
 
@@ -112,7 +121,8 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label" for="reg-license-no">License Number *</label>
-                                    <input type="text" id="reg-license-no" class="form-control" placeholder="DL-042011001234">
+                                    <input type="text" id="reg-license-no" class="form-control"
+                                        placeholder="DL-042011001234">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label" for="reg-license-expiry">License Expiry *</label>
@@ -123,7 +133,8 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label" for="reg-vehicle-number">Vehicle Plate Number *</label>
-                                    <input type="text" id="reg-vehicle-number" class="form-control" placeholder="DL-01-AB-1234">
+                                    <input type="text" id="reg-vehicle-number" class="form-control"
+                                        placeholder="DL-01-AB-1234">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label" for="reg-vehicle-type">Vehicle Category *</label>
@@ -139,16 +150,19 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label" for="reg-model">Vehicle Model *</label>
-                                    <input type="text" id="reg-model" class="form-control" placeholder="e.g. Toyota Camry">
+                                    <input type="text" id="reg-model" class="form-control"
+                                        placeholder="e.g. Toyota Camry">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label" for="reg-capacity">Capacity</label>
-                                    <input type="number" id="reg-capacity" class="form-control" value="4" min="1" max="8">
+                                    <input type="number" id="reg-capacity" class="form-control" value="4" min="1"
+                                        max="8">
                                 </div>
                             </div>
                         </div>
 
-                        <button type="submit" id="btn-submit-signup" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+                        <button type="submit" id="btn-submit-signup" class="btn btn-primary btn-block btn-lg"
+                            style="margin-top: 1rem;">
                             Create Passenger Account
                         </button>
                     </form>
@@ -157,7 +171,7 @@
         </div>
     </main>
 
-    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
     <script>
         let loginRole = 'PASSENGER';
         let signupRole = 'PASSENGER';
@@ -239,6 +253,23 @@
             }
         }
 
+        function fillDemoLogin(email, password, role) {
+            hideAlert();
+            document.getElementById('login-email').value = email;
+            document.getElementById('login-password').value = password;
+            setLoginRole(role);
+        }
+
+        // Auto-detect role as user types test email
+        document.getElementById('login-email').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase().trim();
+            if (val === 'mike@example.com' || val === 'sam@example.com' || val.includes('driver')) {
+                if (loginRole !== 'DRIVER') setLoginRole('DRIVER');
+            } else if (val.includes('admin')) {
+                if (loginRole !== 'EMPLOYEE') setLoginRole('EMPLOYEE');
+            }
+        });
+
         function toggleDriverSignupRole() {
             hideAlert();
             setSignupRole(signupRole === 'PASSENGER' ? 'DRIVER' : 'PASSENGER');
@@ -267,7 +298,7 @@
             }
         }
 
-        // AJAX Form Submissions
+        // Direct fetch submission for Login
         document.getElementById('form-login').addEventListener('submit', async (e) => {
             e.preventDefault();
             hideAlert();
@@ -277,26 +308,35 @@
             const submitBtn = document.getElementById('btn-submit-login');
 
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Authenticating...';
+            submitBtn.textContent = 'Authenticating with server...';
 
             try {
-                const res = await api.post('/auth/login', { email, password, role: loginRole });
-                if (res.success && res.token) {
-                    api.setToken(res.token);
-                    api.setUser(res.user);
-                    showAlert('Login successful! Redirecting...', false);
+                // Direct HTTP POST to server.js + MySQL
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
 
-                    setTimeout(() => {
-                        const role = res.user.role;
-                        if (role === 'ADMIN' || role === 'SUPER ADMIN') {
-                            window.location.href = '/admin/admin-dashboard.html';
-                        } else if (role === 'DRIVER') {
-                            window.location.href = '/driver/driver-dashboard.html';
-                        } else {
-                            window.location.href = '/passenger/passenger-dashboard.html';
-                        }
-                    }, 800);
+                const res = await response.json().catch(() => ({}));
+
+                if (!response.ok || !res.success) {
+                    throw new Error(res.message || 'Login failed. Please check credentials.');
                 }
+
+                setAuthSession(res.token, res.user);
+                showAlert(`Welcome back, ${res.user.name || 'User'}! Redirecting...`, false);
+
+                setTimeout(() => {
+                    const role = (res.user && res.user.role ? res.user.role : '').toUpperCase();
+                    if (role === 'ADMIN' || role === 'SUPER ADMIN') {
+                        window.location.href = '/admin/admin-dashboard.html';
+                    } else if (role === 'DRIVER') {
+                        window.location.href = '/driver/driver-dashboard.html';
+                    } else {
+                        window.location.href = '/passenger/passenger-dashboard.html';
+                    }
+                }, 800);
             } catch (err) {
                 showAlert(err.message || 'Login failed. Please check credentials.');
                 submitBtn.disabled = false;
@@ -304,6 +344,7 @@
             }
         });
 
+        // Direct fetch submission for Registration
         document.getElementById('form-signup').addEventListener('submit', async (e) => {
             e.preventDefault();
             hideAlert();
@@ -336,23 +377,33 @@
 
             const submitBtn = document.getElementById('btn-submit-signup');
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Creating Account...';
+            submitBtn.textContent = 'Registering with server...';
 
             try {
-                const res = await api.post('/auth/register', payload);
-                if (res.success && res.token) {
-                    api.setToken(res.token);
-                    api.setUser(res.user);
-                    showAlert('Registration successful! Redirecting...', false);
+                // Direct HTTP POST to server.js + MySQL
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-                    setTimeout(() => {
-                        if (res.user.role === 'DRIVER') {
-                            window.location.href = '/driver/driver-dashboard.html';
-                        } else {
-                            window.location.href = '/passenger/passenger-dashboard.html';
-                        }
-                    }, 800);
+                const res = await response.json().catch(() => ({}));
+
+                if (!response.ok || !res.success) {
+                    throw new Error(res.message || 'Registration failed. Please try again.');
                 }
+
+                setAuthSession(res.token, res.user);
+                showAlert('Registration successful! Redirecting...', false);
+
+                setTimeout(() => {
+                    const role = (res.user && res.user.role ? res.user.role : '').toUpperCase();
+                    if (role === 'DRIVER') {
+                        window.location.href = '/driver/driver-dashboard.html';
+                    } else {
+                        window.location.href = '/passenger/passenger-dashboard.html';
+                    }
+                }, 800);
             } catch (err) {
                 showAlert(err.message || 'Registration failed. Please try again.');
                 submitBtn.disabled = false;
@@ -367,4 +418,5 @@
         });
     </script>
 </body>
+
 </html>
