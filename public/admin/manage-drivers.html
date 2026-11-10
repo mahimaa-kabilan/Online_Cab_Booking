@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Drivers - CabGo Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Standard Header Navbar matching Passenger & Driver -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/admin/admin-dashboard.html" class="brand-logo">
+                <span class="cab-badge">ADMIN</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/admin/admin-dashboard.html">Dashboard</a></li>
+                <li><a href="/admin/manage-passengers.html">Passengers</a></li>
+                <li><a href="/admin/manage-drivers.html" class="active">Drivers</a></li>
+                <li><a href="/admin/manage-vehicles.html">Vehicles</a></li>
+                <li><a href="/admin/manage-trips.html">Trips</a></li>
+                <li><a href="/admin/service-areas.html">Service Areas</a></li>
+                <li><a href="/admin/fare-rules.html">Fare Rules</a></li>
+                <li><a href="/admin/reports.html">Reports</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h2>Driver Management & Verification 🚕</h2>
+                <p style="color: var(--text-secondary);">Approve documents, verify driver KYC, monitor availability, ratings, and ride assignments.</p>
+            </div>
+            <div>
+                <button onclick="loadDrivers()" class="btn btn-outline btn-sm">🔄 Refresh List</button>
+            </div>
+        </div>
+
+        <!-- Filter Bar Card -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; flex: 1;">
+                    <input type="text" id="search-input" class="form-control" placeholder="Search by name, email, or license..." style="max-width: 320px;" onkeyup="if(event.key==='Enter') loadDrivers()">
+                    
+                    <select id="filter-verification" class="form-control" style="max-width: 200px;" onchange="loadDrivers()">
+                        <option value="">All Verification Statuses</option>
+                        <option value="PENDING">Pending Review</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                    </select>
+
+                    <button onclick="loadDrivers()" class="btn btn-primary btn-sm">Filter</button>
+                    <button onclick="resetFilters()" class="btn btn-outline btn-sm">Reset</button>
+                </div>
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);" id="driver-count-label">
+                    Loading drivers...
+                </div>
+            </div>
+        </div>
+
+        <!-- Drivers Table Card -->
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Driver</th>
+                            <th>License #</th>
+                            <th>Verification</th>
+                            <th>Assigned Vehicle</th>
+                            <th>Availability</th>
+                            <th>Rating</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="drivers-tbody">
+                        <tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-secondary);">Loading driver directory...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Driver Details & KYC Modal -->
+    <div id="driver-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 id="modal-driver-title">Driver Profile & KYC Verification</h3>
+                <button class="modal-close-btn" onclick="closeModal('driver-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="grid-2" style="margin-bottom: 1.5rem; background: var(--bg-body); padding: 1.25rem; border-radius: var(--radius-md);">
+                    <div>
+                        <p style="margin: 0.25rem 0;"><strong>Name:</strong> <span id="m-driver-name">-</span></p>
+                        <p style="margin: 0.25rem 0;"><strong>Email:</strong> <span id="m-driver-email">-</span></p>
+                        <p style="margin: 0.25rem 0;"><strong>Mobile:</strong> <span id="m-driver-mobile">-</span></p>
+                        <p style="margin: 0.25rem 0;"><strong>License Number:</strong> <span id="m-driver-license" style="font-family:monospace; font-weight:bold;">-</span></p>
+                        <p style="margin: 0.25rem 0;"><strong>Verification:</strong> <span id="m-driver-verification">-</span></p>
+                    </div>
+                    <div>
+                        <p style="margin: 0.25rem 0;"><strong>Assigned Vehicle:</strong> <span id="m-driver-vehicle">-</span></p>
+                        <p style="margin: 0.25rem 0;"><strong>Duty Status:</strong> <span id="m-driver-duty">-</span></p>
+                        <p style="margin: 0.25rem 0;"><strong>Average Rating:</strong> <span id="m-driver-rating">-</span></p>
+                        <p style="margin: 0.25rem 0;"><strong>Account Status:</strong> <span id="m-driver-status">-</span></p>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: center; background: var(--bg-card); padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-md);">
+                    <strong>KYC Verification Decision:</strong>
+                    <button id="modal-btn-approve" class="btn btn-success btn-sm" onclick="submitVerification('APPROVED')">✓ Approve Verification</button>
+                    <button id="modal-btn-reject" class="btn btn-danger btn-sm" onclick="submitVerification('REJECTED')">✕ Reject Verification</button>
+                </div>
+
+                <h4 style="margin-bottom: 0.75rem;">Driver Completed Trips</h4>
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                    <table class="table" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th>Trip #</th>
+                                <th>Passenger</th>
+                                <th>Route</th>
+                                <th>Fare</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-driver-trips-tbody">
+                            <tr><td colspan="6" style="text-align:center;">No completed or active rides.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('driver-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        let selectedDriverProfileId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!requireAuth('ADMIN')) return;
+            await loadDrivers();
+        });
+
+        async function loadDrivers() {
+            try {
+                const search = document.getElementById('search-input').value.trim();
+                const verification = document.getElementById('filter-verification').value;
+
+                const params = new URLSearchParams();
+                if (search) params.append('search', search);
+                if (verification) params.append('verification', verification);
+
+                const res = await api.get('/admin/drivers?' + params.toString());
+                const tbody = document.getElementById('drivers-tbody');
+
+                if (!res.success || !res.drivers || res.drivers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-secondary);">No drivers found matching criteria.</td></tr>';
+                    document.getElementById('driver-count-label').textContent = '0 drivers found';
+                    return;
+                }
+
+                document.getElementById('driver-count-label').textContent = `Showing ${res.drivers.length} driver(s)`;
+
+                tbody.innerHTML = res.drivers.map(d => {
+                    const isBlocked = d.status === 'BLOCKED';
+                    const verifBadge = d.verification_status === 'APPROVED' ? 'badge-completed' :
+                                      d.verification_status === 'PENDING' ? 'badge-pending' : 'badge-cancelled';
+                    
+                    const availabilityBadge = d.is_available 
+                        ? '<span class="badge badge-active">Available (Online)</span>'
+                        : '<span class="badge badge-offline">Off Duty / Offline</span>';
+
+                    return `
+                        <tr>
+                            <td>
+                                <div style="font-weight:600;">${d.name}</div>
+                                <div style="font-size:0.8rem; color:var(--text-secondary);">${d.email} | ${d.mobile || 'No phone'}</div>
+                            </td>
+                            <td><code>${d.license_no || 'Not Submitted'}</code></td>
+                            <td><span class="badge ${verifBadge}">${d.verification_status}</span></td>
+                            <td>
+                                ${d.vehicle_number 
+                                    ? `<strong>${d.vehicle_number}</strong><div style="font-size:0.75rem; color:var(--text-secondary);">${d.model || ''} (${d.vehicle_type || ''})</div>`
+                                    : '<span style="color:var(--text-secondary); font-size:0.85rem;">None Assigned</span>'
+                                }
+                            </td>
+                            <td>${availabilityBadge}</td>
+                            <td>
+                                <span style="font-weight:bold; color:var(--warning);">★ ${Number(d.rating || 5.0).toFixed(1)}</span>
+                                <span style="font-size:0.75rem; color:var(--text-secondary);">(${d.completed_trips || 0} rides)</span>
+                            </td>
+                            <td><span class="badge ${isBlocked ? 'badge-cancelled' : 'badge-active'}">${d.status}</span></td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <button class="btn btn-outline btn-sm" onclick="viewDriverDetails(${d.user_id})">👁️ Details</button>
+                                <button class="btn ${isBlocked ? 'btn-success' : 'btn-danger'} btn-sm" onclick="toggleStatus(${d.user_id}, '${d.status}')">
+                                    ${isBlocked ? '✓ Unblock' : '✕ Block'}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load drivers:', err);
+                showToast(err.message || 'Error loading drivers', 'danger');
+            }
+        }
+
+        function resetFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-verification').value = '';
+            loadDrivers();
+        }
+
+        async function viewDriverDetails(userId) {
+            try {
+                const res = await api.get(`/admin/drivers/${userId}`);
+                if (!res.success) {
+                    showToast(res.message || 'Failed to load driver details', 'danger');
+                    return;
+                }
+
+                const d = res.driver;
+                selectedDriverProfileId = d.driver_id;
+                
+                document.getElementById('modal-driver-title').textContent = `${d.name} (Driver #${d.user_id})`;
+                document.getElementById('m-driver-name').textContent = d.name;
+                document.getElementById('m-driver-email').textContent = d.email;
+                document.getElementById('m-driver-mobile').textContent = d.mobile || 'N/A';
+                document.getElementById('m-driver-license').textContent = d.license_no || 'N/A';
+                
+                const verifBadge = d.verification_status === 'APPROVED' ? 'badge-completed' :
+                                  d.verification_status === 'PENDING' ? 'badge-pending' : 'badge-cancelled';
+                document.getElementById('m-driver-verification').innerHTML = `<span class="badge ${verifBadge}">${d.verification_status}</span>`;
+                
+                document.getElementById('m-driver-vehicle').textContent = d.vehicle_number 
+                    ? `${d.model} (${d.vehicle_number}) - ${d.vehicle_type}`
+                    : 'No assigned vehicle';
+                
+                document.getElementById('m-driver-duty').innerHTML = d.is_available 
+                    ? `<span class="badge badge-active">Available (Online)</span>`
+                    : `<span class="badge badge-offline">Off Duty / Offline</span>`;
+
+                document.getElementById('m-driver-rating').textContent = `★ ${Number(d.rating || 5.0).toFixed(1)}`;
+                document.getElementById('m-driver-status').innerHTML = `<span class="badge ${d.status === 'BLOCKED' ? 'badge-cancelled' : 'badge-active'}">${d.status}</span>`;
+
+                const tbody = document.getElementById('modal-driver-trips-tbody');
+                if (!res.trips || res.trips.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-secondary);">No trips registered for this driver.</td></tr>';
+                } else {
+                    tbody.innerHTML = res.trips.map(t => `
+                        <tr>
+                            <td>#${t.trip_id}</td>
+                            <td>${t.passenger_name || 'Passenger'}</td>
+                            <td>${t.pickup_location} → ${t.destination}</td>
+                            <td><strong>${formatCurrency(t.fare)}</strong></td>
+                            <td><span class="badge badge-${(t.trip_status || '').toLowerCase()}">${t.trip_status}</span></td>
+                            <td>${formatDate(t.start_time || t.created_at)}</td>
+                        </tr>
+                    `).join('');
+                }
+
+                openModal('driver-modal');
+            } catch (err) {
+                console.error('Failed to load driver details:', err);
+                showToast(err.message || 'Error loading details', 'danger');
+            }
+        }
+
+        async function submitVerification(status) {
+            if (!selectedDriverProfileId) return;
+            const confirmMsg = `Are you sure you want to mark this driver verification as ${status}?`;
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const res = await api.post('/admin/drivers/verification', {
+                    driver_id: selectedDriverProfileId,
+                    verification_status: status
+                });
+
+                if (res.success) {
+                    showToast(res.message || `Driver verification updated to ${status}`, 'success');
+                    closeModal('driver-modal');
+                    await loadDrivers();
+                } else {
+                    showToast(res.message || 'Failed to update verification', 'danger');
+                }
+            } catch (err) {
+                console.error('Failed to update verification:', err);
+                showToast(err.message || 'Error updating verification', 'danger');
+            }
+        }
+
+        async function toggleStatus(userId, currentStatus) {
+            const newStatus = currentStatus === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED';
+            const confirmMsg = newStatus === 'BLOCKED' 
+                ? 'Are you sure you want to BLOCK this driver? They will immediately be barred from receiving ride requests.' 
+                : 'Are you sure you want to UNBLOCK this driver?';
+            
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const res = await api.post('/admin/toggle-status', { user_id: userId, status: newStatus });
+                if (res.success) {
+                    showToast(res.message || `Driver status updated to ${newStatus}`, 'success');
+                    await loadDrivers();
+                } else {
+                    showToast(res.message || 'Failed to update status', 'danger');
+                }
+            } catch (err) {
+                console.error('Failed to toggle status:', err);
+                showToast(err.message || 'Error updating status', 'danger');
+            }
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) { el.classList.add('active'); el.style.display = 'flex'; }
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) { el.classList.remove('active'); el.style.display = 'none'; }
+        }
+    </script>
+</body>
+</html>

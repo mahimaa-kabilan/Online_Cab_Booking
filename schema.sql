@@ -144,3 +144,12 @@ CREATE TABLE IF NOT EXISTS system_logs (
     ip_address VARCHAR(45),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 13. System Settings Table
+CREATE TABLE IF NOT EXISTS system_settings (
+    setting_id INT AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(100) NOT NULL UNIQUE,
+    setting_value TEXT NOT NULL,
+    description VARCHAR(255),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

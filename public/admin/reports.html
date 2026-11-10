@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports & Insights - CabGo Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Standard Header Navbar matching Passenger & Driver -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/admin/admin-dashboard.html" class="brand-logo">
+                <span class="cab-badge">ADMIN</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/admin/admin-dashboard.html">Dashboard</a></li>
+                <li><a href="/admin/manage-passengers.html">Passengers</a></li>
+                <li><a href="/admin/manage-drivers.html">Drivers</a></li>
+                <li><a href="/admin/manage-vehicles.html">Vehicles</a></li>
+                <li><a href="/admin/manage-trips.html">Trips</a></li>
+                <li><a href="/admin/service-areas.html">Service Areas</a></li>
+                <li><a href="/admin/fare-rules.html">Fare Rules</a></li>
+                <li><a href="/admin/reports.html" class="active">Reports</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h2>Operational Reports & System Activity 📈</h2>
+                <p style="color: var(--text-secondary);">Real-time performance summaries, category breakdowns, driver rankings, and audit records.</p>
+            </div>
+            <div>
+                <button onclick="loadAllReports()" class="btn btn-outline btn-sm">🔄 Refresh Analytics</button>
+            </div>
+        </div>
+
+        <!-- 4 Summary Stat Cards -->
+        <div class="grid-4" style="margin-bottom: 2rem;">
+            <div class="stat-card">
+                <div class="stat-icon green">🗺️</div>
+                <div>
+                    <div id="rep-total-rides" class="stat-val">0</div>
+                    <div class="stat-label">Total Platform Rides</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✓</div>
+                <div>
+                    <div id="rep-completed-rides" class="stat-val">0</div>
+                    <div class="stat-label">Completed Journeys</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">✕</div>
+                <div>
+                    <div id="rep-cancelled-rides" class="stat-val">0</div>
+                    <div class="stat-label">Cancelled Rides</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">💰</div>
+                <div>
+                    <div id="rep-total-revenue" class="stat-val">₹0.00</div>
+                    <div class="stat-label">Settled Gross Revenue</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Category Performance Breakdown -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+                <h3>Vehicle Category Performance</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Completed Rides</th>
+                            <th>Total Category Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cat-breakdown-tbody">
+                        <tr><td colspan="3" style="text-align:center; padding:1.5rem; color:var(--text-secondary);">Loading category breakdown...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Driver & Passenger Performance Split -->
+        <div class="grid-2" style="margin-bottom: 2rem;">
+            <!-- Top Drivers -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🚕 Top Driver Performance</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" style="font-size:0.85rem;">
+                        <thead>
+                            <tr>
+                                <th>Driver</th>
+                                <th>Completed</th>
+                                <th>Rating</th>
+                                <th>Gross Earnings</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-drivers-tbody">
+                            <tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-secondary);">Loading driver metrics...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Top Passenger Activity -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>👥 Frequent Passenger Activity</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" style="font-size:0.85rem;">
+                        <thead>
+                            <tr>
+                                <th>Passenger</th>
+                                <th>Total Rides</th>
+                                <th>Total Spend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-passengers-tbody">
+                            <tr><td colspan="3" style="text-align:center; padding:1rem; color:var(--text-secondary);">Loading passenger activity...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Activity Section (Section 2.I) -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Recent System Activity Logs</h3>
+            </div>
+            <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                <table class="table" style="font-size:0.85rem;">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activity-tbody">
+                        <tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-secondary);">Loading system activity logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!requireAuth('ADMIN')) return;
+            await loadAllReports();
+        });
+
+        async function loadAllReports() {
+            await Promise.all([
+                loadReportStats(),
+                loadSystemActivity()
+            ]);
+        }
+
+        async function loadReportStats() {
+            try {
+                const res = await api.get('/admin/reports');
+                if (!res.success) {
+                    showToast(res.message || 'Failed to load reports', 'danger');
+                    return;
+                }
+
+                const reports = res.reports || {};
+                const sum = reports.totals || res.summary || {};
+                document.getElementById('rep-total-rides').textContent = sum.total_trips || 0;
+                document.getElementById('rep-completed-rides').textContent = sum.completed_trips || 0;
+                document.getElementById('rep-cancelled-rides').textContent = sum.cancelled_trips || 0;
+                document.getElementById('rep-total-revenue').textContent = formatCurrency(sum.total_revenue || 0);
+
+                const catTbody = document.getElementById('cat-breakdown-tbody');
+                const cats = reports.vehicleStats || res.vehicleCategoryBreakdown || [];
+                if (cats.length === 0) {
+                    catTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1.5rem; color:var(--text-secondary);">No category data found.</td></tr>';
+                } else {
+                    catTbody.innerHTML = cats.map(c => `
+                        <tr>
+                            <td><strong class="badge badge-confirmed">${c.vehicle_type}</strong></td>
+                            <td>${c.trips_count || 0}</td>
+                            <td><strong>${formatCurrency(c.revenue || 0)}</strong></td>
+                        </tr>
+                    `).join('');
+                }
+
+                const driverTbody = document.getElementById('top-drivers-tbody');
+                const drivers = reports.driverPerformance || res.topDrivers || [];
+                if (drivers.length === 0) {
+                    driverTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-secondary);">No driver metrics recorded yet.</td></tr>';
+                } else {
+                    driverTbody.innerHTML = drivers.map(d => `
+                        <tr>
+                            <td>
+                                <strong>${d.driver_name}</strong>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">${d.mobile || ''}</div>
+                            </td>
+                            <td><strong>${d.completed_trips || 0}</strong></td>
+                            <td style="color:var(--warning); font-weight:bold;">★ ${Number(d.rating || 5.0).toFixed(1)}</td>
+                            <td><strong>${formatCurrency(d.total_earnings || 0)}</strong></td>
+                        </tr>
+                    `).join('');
+                }
+
+                const passTbody = document.getElementById('top-passengers-tbody');
+                const passengers = reports.passengerActivity || res.passengerActivity || [];
+                if (passengers.length === 0) {
+                    passTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1rem; color:var(--text-secondary);">No passenger activity recorded.</td></tr>';
+                } else {
+                    passTbody.innerHTML = passengers.map(p => `
+                        <tr>
+                            <td>
+                                <strong>${p.passenger_name}</strong>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">${p.email || ''}</div>
+                            </td>
+                            <td><strong>${p.total_trips || 0}</strong> rides</td>
+                            <td><strong>${formatCurrency(p.total_spent || 0)}</strong></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Failed to load reports:', err);
+                showToast(err.message || 'Error loading report metrics', 'danger');
+            }
+        }
+
+        async function loadSystemActivity() {
+            try {
+                const res = await api.get('/admin/activity');
+                const tbody = document.getElementById('activity-tbody');
+
+                if (!res.success || !res.logs || res.logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-secondary);">No activity logs registered.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = res.logs.map(l => `
+                    <tr>
+                        <td style="white-space:nowrap; color:var(--text-secondary);">${formatDate(l.created_at)}</td>
+                        <td>
+                            <strong>${l.user_name || 'System / Guest'}</strong>
+                            <div style="font-size:0.75rem; color:var(--text-secondary);">${l.user_role || 'ANONYMOUS'}</div>
+                        </td>
+                        <td><span class="badge badge-confirmed">${l.action}</span></td>
+                        <td>${l.description}</td>
+                        <td><code>${l.ip_address || '127.0.0.1'}</code></td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to load activity:', err);
+            }
+        }
+    </script>
+</body>
+</html>

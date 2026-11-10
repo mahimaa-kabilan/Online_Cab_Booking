@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fare Rules - CabGo Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Standard Header Navbar matching Passenger & Driver -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/admin/admin-dashboard.html" class="brand-logo">
+                <span class="cab-badge">ADMIN</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/admin/admin-dashboard.html">Dashboard</a></li>
+                <li><a href="/admin/manage-passengers.html">Passengers</a></li>
+                <li><a href="/admin/manage-drivers.html">Drivers</a></li>
+                <li><a href="/admin/manage-vehicles.html">Vehicles</a></li>
+                <li><a href="/admin/manage-trips.html">Trips</a></li>
+                <li><a href="/admin/service-areas.html">Service Areas</a></li>
+                <li><a href="/admin/fare-rules.html" class="active">Fare Rules</a></li>
+                <li><a href="/admin/reports.html">Reports</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h2>Pricing & Fare Rule Engine 💵</h2>
+                <p style="color: var(--text-secondary);">Configure base fares, per-kilometer rates, minute charges, and cancellation penalties per vehicle category.</p>
+            </div>
+            <div>
+                <button onclick="loadFareRules()" class="btn btn-outline btn-sm">🔄 Refresh Fares</button>
+            </div>
+        </div>
+
+        <!-- Dynamic Category Cards Grid -->
+        <div id="fare-cards-grid" class="grid-4" style="margin-bottom: 2rem;"></div>
+
+        <!-- Detailed Table of Fare Rules -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Vehicle Category Fare Table</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Base Fare</th>
+                            <th>Per KM Rate</th>
+                            <th>Per Minute Rate</th>
+                            <th>Cancellation Fee</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fare-rules-tbody">
+                        <tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-secondary);">Loading fare rules...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Fare Rule Modal -->
+    <div id="fare-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="modal-fare-title">Update Fare Rule</h3>
+                <button class="modal-close-btn" onclick="closeModal('fare-modal')">&times;</button>
+            </div>
+            <form id="fare-form" onsubmit="handleFareFormSubmit(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="f-id">
+
+                    <div class="form-group">
+                        <label class="form-label" for="f-type">Vehicle Category</label>
+                        <input type="text" id="f-type" class="form-control" readonly style="background:var(--bg-body); font-weight:bold;">
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="f-base">Base Fare (₹) *</label>
+                            <input type="number" step="0.5" id="f-base" class="form-control" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="f-km">Rate per KM (₹) *</label>
+                            <input type="number" step="0.5" id="f-km" class="form-control" required min="0">
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="f-min">Rate per Min (₹) *</label>
+                            <input type="number" step="0.25" id="f-min" class="form-control" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="f-cancel">Cancellation Fee (₹) *</label>
+                            <input type="number" step="1.0" id="f-cancel" class="form-control" required min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="f-active">Rule Status</label>
+                        <select id="f-active" class="form-control">
+                            <option value="ACTIVE">ACTIVE (Enabled for Booking)</option>
+                            <option value="INACTIVE">INACTIVE (Disabled)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('fare-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Fare Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        let currentFareRules = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!requireAuth('ADMIN')) return;
+            await loadFareRules();
+        });
+
+        async function loadFareRules() {
+            try {
+                const res = await api.get('/admin/fare-rules');
+                if (!res.success) {
+                    showToast(res.message || 'Failed to load fare rules', 'danger');
+                    return;
+                }
+
+                currentFareRules = res.fareRules || res.rules || [];
+
+                const cardsGrid = document.getElementById('fare-cards-grid');
+                const categoryIcons = {
+                    'HATCHBACK': '🚗',
+                    'SEDAN': '🚘',
+                    'SUV': '🚙',
+                    'AUTO': '🛺'
+                };
+
+                cardsGrid.innerHTML = currentFareRules.map(r => {
+                    const isActive = r.status === 'ACTIVE' || r.is_active === 1;
+                    return `
+                        <div class="card" style="border-top: 4px solid var(--primary);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                                <span style="font-size: 1.5rem;">${categoryIcons[r.vehicle_type] || '🚕'}</span>
+                                <span class="badge ${isActive ? 'badge-active' : 'badge-cancelled'}">
+                                    ${isActive ? 'ACTIVE' : 'INACTIVE'}
+                                </span>
+                            </div>
+                            <h3 style="margin: 0 0 0.5rem 0;">${r.vehicle_type}</h3>
+                            <div style="font-size:0.9rem; line-height: 1.6; color:var(--text-secondary);">
+                                <div>Base Fare: <strong style="color:var(--text-primary);">${formatCurrency(r.base_fare)}</strong></div>
+                                <div>Per KM: <strong style="color:var(--text-primary);">${formatCurrency(r.per_km_rate)}/km</strong></div>
+                                <div>Per Min: <strong style="color:var(--text-primary);">${formatCurrency(r.per_minute_rate)}/min</strong></div>
+                                <div>Cancel Fee: <strong style="color:var(--text-primary);">${formatCurrency(r.cancellation_fee)}</strong></div>
+                            </div>
+                            <button class="btn btn-outline btn-sm" style="width:100%; margin-top:1rem;" onclick="openEditFareModal(${r.fare_id || r.rule_id})">
+                                ✏️ Edit Fare
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+                const tbody = document.getElementById('fare-rules-tbody');
+                tbody.innerHTML = currentFareRules.map(r => {
+                    const isActive = r.status === 'ACTIVE' || r.is_active === 1;
+                    const id = r.fare_id || r.rule_id;
+                    return `
+                        <tr>
+                            <td><strong>${r.vehicle_type}</strong></td>
+                            <td>${formatCurrency(r.base_fare)}</td>
+                            <td>${formatCurrency(r.per_km_rate)}</td>
+                            <td>${formatCurrency(r.per_minute_rate)}</td>
+                            <td>${formatCurrency(r.cancellation_fee)}</td>
+                            <td><span class="badge ${isActive ? 'badge-active' : 'badge-cancelled'}">${isActive ? 'ACTIVE' : 'INACTIVE'}</span></td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <button class="btn btn-outline btn-sm" onclick="openEditFareModal(${id})">✏️ Edit</button>
+                                <button class="btn ${isActive ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleFareStatus(${id}, '${isActive ? 'INACTIVE' : 'ACTIVE'}')">
+                                    ${isActive ? 'Deactivate' : 'Activate'}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load fare rules:', err);
+                showToast(err.message || 'Error loading fare rules', 'danger');
+            }
+        }
+
+        function openEditFareModal(ruleId) {
+            const r = currentFareRules.find(x => (x.fare_id === ruleId || x.rule_id === ruleId));
+            if (!r) return;
+
+            document.getElementById('modal-fare-title').textContent = `Update Fares: ${r.vehicle_type}`;
+            document.getElementById('f-id').value = r.fare_id || r.rule_id;
+            document.getElementById('f-type').value = r.vehicle_type;
+            document.getElementById('f-base').value = r.base_fare;
+            document.getElementById('f-km').value = r.per_km_rate;
+            document.getElementById('f-min').value = r.per_minute_rate;
+            document.getElementById('f-cancel').value = r.cancellation_fee;
+            document.getElementById('f-active').value = r.status || (r.is_active ? 'ACTIVE' : 'INACTIVE');
+
+            openModal('fare-modal');
+        }
+
+        async function handleFareFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('f-id').value;
+            const payload = {
+                base_fare: parseFloat(document.getElementById('f-base').value),
+                per_km_rate: parseFloat(document.getElementById('f-km').value),
+                per_minute_rate: parseFloat(document.getElementById('f-min').value),
+                cancellation_fee: parseFloat(document.getElementById('f-cancel').value),
+                status: document.getElementById('f-active').value
+            };
+
+            try {
+                const res = await api.put(`/admin/fare-rules/${id}`, payload);
+                if (res.success) {
+                    showToast(res.message || 'Fare rule updated successfully', 'success');
+                    closeModal('fare-modal');
+                    await loadFareRules();
+                } else {
+                    showToast(res.message || 'Failed to update fare rule', 'danger');
+                }
+            } catch (err) {
+                console.error('Error updating fare:', err);
+                showToast(err.message || 'Error saving fare configuration', 'danger');
+            }
+        }
+
+        async function toggleFareStatus(ruleId, newStatus) {
+            try {
+                const res = await api.post('/admin/fare-rules/toggle-status', { fare_id: ruleId, status: newStatus });
+                if (res.success) {
+                    showToast(res.message || 'Fare rule status updated', 'success');
+                    await loadFareRules();
+                } else {
+                    showToast(res.message || 'Failed to update status', 'danger');
+                }
+            } catch (err) {
+                console.error('Error toggling fare status:', err);
+                showToast(err.message || 'Error updating status', 'danger');
+            }
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) { el.classList.add('active'); el.style.display = 'flex'; }
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) { el.classList.remove('active'); el.style.display = 'none'; }
+        }
+    </script>
+</body>
+</html>

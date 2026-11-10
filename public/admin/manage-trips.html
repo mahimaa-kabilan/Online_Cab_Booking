@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Trips - CabGo Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Standard Header Navbar matching Passenger & Driver -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/admin/admin-dashboard.html" class="brand-logo">
+                <span class="cab-badge">ADMIN</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/admin/admin-dashboard.html">Dashboard</a></li>
+                <li><a href="/admin/manage-passengers.html">Passengers</a></li>
+                <li><a href="/admin/manage-drivers.html">Drivers</a></li>
+                <li><a href="/admin/manage-vehicles.html">Vehicles</a></li>
+                <li><a href="/admin/manage-trips.html" class="active">Trips</a></li>
+                <li><a href="/admin/service-areas.html">Service Areas</a></li>
+                <li><a href="/admin/fare-rules.html">Fare Rules</a></li>
+                <li><a href="/admin/reports.html">Reports</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h2>Trip Dispatch & Ride Operations 🗺️</h2>
+                <p style="color: var(--text-secondary);">Monitor live journeys, filter historic bookings, and execute administrative trip overrides.</p>
+            </div>
+            <div>
+                <button onclick="loadTrips()" class="btn btn-outline btn-sm">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <!-- Filter Bar Card -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; flex: 1;">
+                    <input type="text" id="search-input" class="form-control" placeholder="Search passenger, driver, pickup, destination..." style="max-width: 340px;" onkeyup="if(event.key==='Enter') loadTrips()">
+                    
+                    <select id="filter-status" class="form-control" style="max-width: 200px;" onchange="loadTrips()">
+                        <option value="">All Ride Statuses</option>
+                        <option value="CONFIRMED">Confirmed / Driver En Route</option>
+                        <option value="STARTED">Started / In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+
+                    <button onclick="loadTrips()" class="btn btn-primary btn-sm">Filter</button>
+                    <button onclick="resetTripFilters()" class="btn btn-outline btn-sm">Reset</button>
+                </div>
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);" id="trip-count-label">
+                    Loading trips...
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Unmatched Ride Requests -->
+        <div id="pending-requests-section" style="margin-bottom: 2rem; display: none;">
+            <div class="card" style="border-left: 4px solid var(--warning);">
+                <div class="card-header">
+                    <h3 style="color: var(--warning); margin: 0;">⚡ Unassigned Ride Requests (Awaiting Driver)</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Req ID</th>
+                                <th>Passenger</th>
+                                <th>Pickup → Destination</th>
+                                <th>Category</th>
+                                <th>Est. Fare</th>
+                                <th>Distance</th>
+                                <th>Requested At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-requests-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Trips Table Card -->
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Trip #</th>
+                            <th>Passenger</th>
+                            <th>Driver & Vehicle</th>
+                            <th>Route</th>
+                            <th>Category</th>
+                            <th>Fare</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Administrative Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trips-tbody">
+                        <tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-secondary);">Loading trips...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script>
+        let currentTrips = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!requireAuth('ADMIN')) return;
+            await loadTrips();
+        });
+
+        async function loadTrips() {
+            try {
+                const search = document.getElementById('search-input').value.trim();
+                const status = document.getElementById('filter-status').value;
+
+                const params = new URLSearchParams();
+                if (search) params.append('search', search);
+                if (status) params.append('status', status);
+
+                const res = await api.get('/admin/trips?' + params.toString());
+                const tbody = document.getElementById('trips-tbody');
+
+                if (!res.success) {
+                    showToast(res.message || 'Failed to fetch trips', 'danger');
+                    return;
+                }
+
+                currentTrips = res.trips || [];
+                const pending = res.pendingRequests || [];
+
+                // Render pending requests
+                const pendingSec = document.getElementById('pending-requests-section');
+                const pendingTbody = document.getElementById('pending-requests-tbody');
+                if (pending.length > 0) {
+                    pendingSec.style.display = 'block';
+                    pendingTbody.innerHTML = pending.map(r => `
+                        <tr>
+                            <td>#${r.request_id}</td>
+                            <td><strong>${r.passenger_name}</strong> (${r.passenger_mobile || 'No mobile'})</td>
+                            <td>${r.pickup_location} → ${r.destination}</td>
+                            <td><span class="badge badge-confirmed">${r.vehicle_type}</span></td>
+                            <td><strong>${formatCurrency(r.fare)}</strong></td>
+                            <td>${r.distance_km || 0} km</td>
+                            <td>${formatDate(r.requested_at)}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    pendingSec.style.display = 'none';
+                }
+
+                if (currentTrips.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-secondary);">No trips match the selected filter.</td></tr>';
+                    document.getElementById('trip-count-label').textContent = '0 trips found';
+                    return;
+                }
+
+                document.getElementById('trip-count-label').textContent = `Showing ${currentTrips.length} trip(s)`;
+
+                tbody.innerHTML = currentTrips.map(t => {
+                    const st = (t.trip_status || '').toUpperCase();
+                    const badgeClass = st === 'COMPLETED' ? 'badge-completed' :
+                                       st === 'STARTED' ? 'badge-active' :
+                                       st === 'CONFIRMED' ? 'badge-confirmed' : 'badge-cancelled';
+
+                    let actionButtons = '';
+                    if (st === 'CONFIRMED') {
+                        actionButtons = `
+                            <button class="btn btn-warning btn-sm" onclick="startTrip(${t.trip_id})">▶ Start</button>
+                            <button class="btn btn-danger btn-sm" onclick="cancelTrip(${t.trip_id})">✕ Cancel</button>
+                        `;
+                    } else if (st === 'STARTED') {
+                        actionButtons = `
+                            <button class="btn btn-success btn-sm" onclick="completeTrip(${t.trip_id})">✓ Complete</button>
+                            <button class="btn btn-danger btn-sm" onclick="cancelTrip(${t.trip_id})">✕ Cancel</button>
+                        `;
+                    } else {
+                        actionButtons = `<span style="color:var(--text-secondary); font-size:0.85rem;">Finalized</span>`;
+                    }
+
+                    return `
+                        <tr>
+                            <td><strong>#${t.trip_id}</strong></td>
+                            <td>
+                                <div style="font-weight:600;">${t.passenger_name}</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">${t.passenger_mobile || ''}</div>
+                            </td>
+                            <td>
+                                <div style="font-weight:600;">${t.driver_name || 'Unassigned'}</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">
+                                    ${t.vehicle_number ? `${t.vehicle_number} (${t.vehicle_model || ''})` : ''}
+                                </div>
+                            </td>
+                            <td>
+                                <div style="font-size:0.85rem; font-weight:600;">${t.pickup_location}</div>
+                                <div style="font-size:0.8rem; color:var(--text-secondary);">→ ${t.destination}</div>
+                            </td>
+                            <td><span class="badge badge-confirmed">${t.vehicle_type}</span></td>
+                            <td><strong>${formatCurrency(t.fare)}</strong></td>
+                            <td><span class="badge ${badgeClass}">${st}</span></td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                ${actionButtons}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load trips:', err);
+                showToast(err.message || 'Error loading trips', 'danger');
+            }
+        }
+
+        function resetTripFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-status').value = '';
+            loadTrips();
+        }
+
+        async function startTrip(tripId) {
+            if (!confirm(`Are you sure you want to administratively START Trip #${tripId}?`)) return;
+
+            try {
+                const res = await api.post('/admin/trips/start', { trip_id: tripId });
+                if (res.success) {
+                    showToast(res.message || 'Trip started', 'success');
+                    await loadTrips();
+                } else {
+                    showToast(res.message || 'Failed to start trip', 'danger');
+                }
+            } catch (err) {
+                console.error('Failed to start trip:', err);
+                showToast(err.message || 'Error starting trip', 'danger');
+            }
+        }
+
+        async function completeTrip(tripId) {
+            if (!confirm(`Are you sure you want to mark Trip #${tripId} as COMPLETED?`)) return;
+
+            try {
+                const res = await api.post('/admin/trips/complete', { trip_id: tripId, payment_method: 'CASH' });
+                if (res.success) {
+                    showToast(res.message || 'Trip completed successfully', 'success');
+                    await loadTrips();
+                } else {
+                    showToast(res.message || 'Failed to complete trip', 'danger');
+                }
+            } catch (err) {
+                console.error('Failed to complete trip:', err);
+                showToast(err.message || 'Error completing trip', 'danger');
+            }
+        }
+
+        async function cancelTrip(tripId) {
+            if (!confirm(`Are you sure you want to administratively CANCEL Trip #${tripId}?`)) return;
+
+            try {
+                const res = await api.post('/admin/trips/cancel', { trip_id: tripId });
+                if (res.success) {
+                    showToast(res.message || 'Trip cancelled', 'success');
+                    await loadTrips();
+                } else {
+                    showToast(res.message || 'Failed to cancel trip', 'danger');
+                }
+            } catch (err) {
+                console.error('Failed to cancel trip:', err);
+                showToast(err.message || 'Error cancelling trip', 'danger');
+            }
+        }
+    </script>
+</body>
+</html>

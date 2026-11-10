@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Settings - CabGo Super Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Standard Header Navbar matching Passenger & Driver -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/superadmin/superadmin-dashboard.html" class="brand-logo">
+                <span class="cab-badge" style="background:var(--accent);">SUPER ADMIN</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/superadmin/superadmin-dashboard.html">Overview</a></li>
+                <li><a href="/superadmin/manage-admins.html">Admins</a></li>
+                <li><a href="/superadmin/permissions.html">Permissions</a></li>
+                <li><a href="/superadmin/system-logs.html">Logs</a></li>
+                <li><a href="/superadmin/system-settings.html" class="active">Settings</a></li>
+                <li><a href="/admin/admin-dashboard.html">Admin View &rarr;</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h2>Global System Configuration ⚙️</h2>
+                <p style="color: var(--text-secondary);">Manage business variables, surge factors, booking limits, and support contact channels.</p>
+            </div>
+            <div>
+                <button onclick="loadSettings()" class="btn btn-outline btn-sm">🔄 Reload Settings</button>
+            </div>
+        </div>
+
+        <div class="card" style="max-width: 800px; margin: 0 auto;">
+            <div class="card-header">
+                <h3>Platform Configuration Settings</h3>
+            </div>
+
+            <form id="settings-form" onsubmit="saveSettings(event)" style="padding: 1.5rem;">
+                <h4 style="margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">🏢 Brand & Contact Details</h4>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label" for="set-app-name">Platform Brand Name *</label>
+                        <input type="text" id="set-app-name" class="form-control" required placeholder="CabGo Online Cabs">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="set-support-email">Official Support Email *</label>
+                        <input type="email" id="set-support-email" class="form-control" required placeholder="support@cabgo.com">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="set-support-phone">Support Helpline / Emergency Mobile *</label>
+                    <input type="text" id="set-support-phone" class="form-control" required placeholder="+91-1800-CAB-HELP">
+                </div>
+
+                <h4 style="margin: 2rem 0 1rem 0; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">⚡ Operations & Ride Rules</h4>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label" for="set-surge">Surge Pricing Multiplier (1.0 = Normal) *</label>
+                        <input type="number" step="0.1" min="1.0" max="4.0" id="set-surge" class="form-control" required>
+                        <small style="color:var(--text-secondary);">Dynamic multiplier applied across all base fares during peak demand.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="set-cancel-limit">Free Cancellation Window (Minutes) *</label>
+                        <input type="number" min="0" max="60" id="set-cancel-limit" class="form-control" required>
+                        <small style="color:var(--text-secondary);">Minutes passenger can cancel after driver accepts without penalty.</small>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label" for="set-max-bookings">Max Concurrent Active Bookings / Passenger *</label>
+                        <input type="number" min="1" max="5" id="set-max-bookings" class="form-control" required>
+                        <small style="color:var(--text-secondary);">Limits spam bookings from a single passenger profile.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="set-commission">Platform Driver Commission Rate (%) *</label>
+                        <input type="number" min="0" max="50" step="0.5" id="set-commission" class="form-control" required>
+                        <small style="color:var(--text-secondary);">Percentage of ride fare retained by CabGo per completed trip.</small>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button type="button" class="btn btn-outline" onclick="loadSettings()">Reset to Saved</button>
+                    <button type="submit" class="btn btn-primary">💾 Save System Settings</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!requireAuth('SUPER ADMIN')) return;
+            await loadSettings();
+        });
+
+        async function loadSettings() {
+            try {
+                const res = await api.get('/superadmin/settings');
+                if (!res.success || !res.settings) {
+                    showToast(res.message || 'Failed to load configuration settings', 'danger');
+                    return;
+                }
+
+                const s = res.settings;
+                document.getElementById('set-app-name').value = s.app_name || 'CabGo Online Cabs';
+                document.getElementById('set-support-email').value = s.support_email || 'support@cabgo.com';
+                document.getElementById('set-support-phone').value = s.support_phone || '+91-1800-CAB-HELP';
+                document.getElementById('set-surge').value = s.surge_multiplier || '1.0';
+                document.getElementById('set-cancel-limit').value = s.cancellation_time_limit_mins || '5';
+                document.getElementById('set-max-bookings').value = s.max_active_bookings_per_passenger || '1';
+                document.getElementById('set-commission').value = s.driver_commission_pct || '15';
+            } catch (err) {
+                console.error('Failed to load settings:', err);
+                showToast(err.message || 'Error loading system settings', 'danger');
+            }
+        }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+            const payload = {
+                app_name: document.getElementById('set-app-name').value.trim(),
+                support_email: document.getElementById('set-support-email').value.trim(),
+                support_phone: document.getElementById('set-support-phone').value.trim(),
+                surge_multiplier: document.getElementById('set-surge').value,
+                cancellation_time_limit_mins: document.getElementById('set-cancel-limit').value,
+                max_active_bookings_per_passenger: document.getElementById('set-max-bookings').value,
+                driver_commission_pct: document.getElementById('set-commission').value
+            };
+
+            try {
+                const res = await api.put('/superadmin/settings', payload);
+                if (res.success) {
+                    showToast(res.message || 'Settings saved successfully', 'success');
+                    await loadSettings();
+                } else {
+                    showToast(res.message || 'Failed to update settings', 'danger');
+                }
+            } catch (err) {
+                console.error('Error saving settings:', err);
+                showToast(err.message || 'Error updating settings', 'danger');
+            }
+        }
+    </script>
+</body>
+</html>

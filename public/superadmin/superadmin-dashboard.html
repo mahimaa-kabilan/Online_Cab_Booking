@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Dashboard - CabGo</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Standard Header Navbar matching Passenger & Driver -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/superadmin/superadmin-dashboard.html" class="brand-logo">
+                <span class="cab-badge" style="background:var(--accent);">SUPER ADMIN</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/superadmin/superadmin-dashboard.html" class="active">Overview</a></li>
+                <li><a href="/superadmin/manage-admins.html">Admins</a></li>
+                <li><a href="/superadmin/permissions.html">Permissions</a></li>
+                <li><a href="/superadmin/system-logs.html">Logs</a></li>
+                <li><a href="/superadmin/system-settings.html">Settings</a></li>
+
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h2>Super Admin Control Center 👑</h2>
+                <p style="color: var(--text-secondary);">Executive oversight, administrator governance, access policies, and audit trails.</p>
+            </div>
+            <div style="display:flex; gap:0.75rem; align-items:center;">
+                <span class="badge badge-started">SUPER PRIVILEGES</span>
+                <button onclick="loadSuperDashboardData()" class="btn btn-outline btn-sm">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <!-- 8 Key Metrics Cards Required by Specification -->
+        <div class="grid-4" style="margin-bottom: 2rem;">
+            <div class="stat-card">
+                <div class="stat-icon blue">🛡️</div>
+                <div>
+                    <div id="sa-total-admins" class="stat-val">0</div>
+                    <div class="stat-label">Total Administrators</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green">✓</div>
+                <div>
+                    <div id="sa-active-admins" class="stat-val">0</div>
+                    <div class="stat-label">Active Administrators</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon red">✕</div>
+                <div>
+                    <div id="sa-inactive-admins" class="stat-val">0</div>
+                    <div class="stat-label">Inactive Administrators</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon blue">👥</div>
+                <div>
+                    <div id="sa-passengers" class="stat-val">0</div>
+                    <div class="stat-label">Total Passengers</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon yellow">🚕</div>
+                <div>
+                    <div id="sa-drivers" class="stat-val">0</div>
+                    <div class="stat-label">Total Drivers</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon blue">🚗</div>
+                <div>
+                    <div id="sa-vehicles" class="stat-val">0</div>
+                    <div class="stat-label">Total Vehicles</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green">🗺️</div>
+                <div>
+                    <div id="sa-trips" class="stat-val">0</div>
+                    <div class="stat-label">Total Platform Trips</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green">💰</div>
+                <div>
+                    <div id="sa-revenue" class="stat-val">₹0.00</div>
+                    <div class="stat-label">System-wide Revenue</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Access Shortcuts -->
+        <div class="grid-4" style="margin-bottom: 2rem;">
+            <a href="/superadmin/manage-admins.html" class="card" style="text-align: center; padding: 1.25rem; text-decoration: none;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🛡️</div>
+                <strong style="color: var(--text-primary); display: block;">Administrators</strong>
+                <span style="font-size: 0.82rem; color: var(--text-secondary);">Create, edit & manage admins</span>
+            </a>
+            <a href="/superadmin/permissions.html" class="card" style="text-align: center; padding: 1.25rem; text-decoration: none;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔑</div>
+                <strong style="color: var(--text-primary); display: block;">Permission Matrix</strong>
+                <span style="font-size: 0.82rem; color: var(--text-secondary);">Assign individual admin privileges</span>
+            </a>
+            <a href="/superadmin/system-logs.html" class="card" style="text-align: center; padding: 1.25rem; text-decoration: none;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📜</div>
+                <strong style="color: var(--text-primary); display: block;">System Audit Logs</strong>
+                <span style="font-size: 0.82rem; color: var(--text-secondary);">Audit security & activity trail</span>
+            </a>
+            <a href="/superadmin/system-settings.html" class="card" style="text-align: center; padding: 1.25rem; text-decoration: none;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚙️</div>
+                <strong style="color: var(--text-primary); display: block;">System Settings</strong>
+                <span style="font-size: 0.82rem; color: var(--text-secondary);">Global commission & app rules</span>
+            </a>
+        </div>
+
+        <!-- Recent System Activity Audit Trail -->
+        <div class="card">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h3>Live System Audit Trail</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Chronological logs of administrative and system actions</p>
+                </div>
+                <a href="/superadmin/system-logs.html" class="btn btn-outline btn-sm">Full Audit Log &rarr;</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                            <th>Description</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sa-recent-logs-tbody">
+                        <tr><td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Loading system logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!requireAuth('SUPER ADMIN')) return;
+            await loadSuperDashboardData();
+        });
+
+        async function loadSuperDashboardData() {
+            try {
+                const res = await api.get('/superadmin/stats');
+                if (!res.success) {
+                    showToast(res.message || 'Failed to load executive stats', 'danger');
+                    return;
+                }
+
+                const s = res.stats || {};
+                document.getElementById('sa-total-admins').textContent = s.totalAdmins || 0;
+                document.getElementById('sa-active-admins').textContent = s.activeAdmins || 0;
+                document.getElementById('sa-inactive-admins').textContent = s.inactiveAdmins || 0;
+                document.getElementById('sa-passengers').textContent = s.totalPassengers || 0;
+                document.getElementById('sa-drivers').textContent = s.totalDrivers || 0;
+                document.getElementById('sa-vehicles').textContent = s.totalVehicles || 0;
+                document.getElementById('sa-trips').textContent = s.totalTrips || 0;
+                document.getElementById('sa-revenue').textContent = formatCurrency(s.systemRevenue || 0);
+
+                const tbody = document.getElementById('sa-recent-logs-tbody');
+                const logs = res.recentLogs || [];
+                if (logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-secondary);">No system activity recorded yet.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = logs.map(l => `
+                    <tr>
+                        <td style="white-space:nowrap; color:var(--text-secondary);">${formatDate(l.created_at)}</td>
+                        <td><strong>${l.user_name || 'System'}</strong></td>
+                        <td><span class="badge ${l.user_role === 'SUPER ADMIN' ? 'badge-started' : 'badge-confirmed'}">${l.user_role || 'GUEST'}</span></td>
+                        <td><span class="badge badge-active">${l.action}</span></td>
+                        <td>${l.description}</td>
+                        <td><code>${l.ip_address || '127.0.0.1'}</code></td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to load superadmin stats:', err);
+                showToast(err.message || 'Error loading dashboard data', 'danger');
+            }
+        }
+    </script>
+</body>
+</html>

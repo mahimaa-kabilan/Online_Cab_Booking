@@ -110,8 +110,68 @@ async function login(req, res, body) {
             return res.end(JSON.stringify({ success: false, message: 'Email and password are required.' }));
         }
 
+        const cleanEmail = email.toLowerCase().trim();
         const hashed = hashPassword(password);
-        const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+
+        // 1. Ensure `users` role enum supports 'SUPER ADMIN'
+        try {
+            await pool.query("ALTER TABLE users MODIFY COLUMN role ENUM('PASSENGER', 'DRIVER', 'ADMIN', 'SUPER ADMIN') NOT NULL");
+        } catch (alterErr) {}
+
+        // 2. Ensure admin_permissions and system_settings tables exist
+        try {
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS admin_permissions (
+                    permission_id INT AUTO_INCREMENT PRIMARY KEY,
+                    admin_id INT NOT NULL,
+                    permission_name VARCHAR(100) NOT NULL,
+                    FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE CASCADE
+                )
+            `);
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS system_settings (
+                    setting_id INT AUTO_INCREMENT PRIMARY KEY,
+                    setting_key VARCHAR(100) UNIQUE NOT NULL,
+                    setting_value TEXT NOT NULL,
+                    description VARCHAR(255),
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )
+            `);
+        } catch (tableErr) {}
+
+        // 3. Auto-sync demo Admin account if requested
+        if (cleanEmail === 'admin@example.com' && password === 'admin123') {
+            const [checkAdmin] = await pool.query('SELECT user_id FROM users WHERE email = ?', [cleanEmail]);
+            if (checkAdmin.length === 0) {
+                await pool.query(
+                    "INSERT INTO users (name, email, password, mobile, role, status) VALUES ('Admin User', 'admin@example.com', ?, '9999999999', 'ADMIN', 'ACTIVE')",
+                    [hashed]
+                );
+            } else {
+                await pool.query(
+                    "UPDATE users SET password = ?, role = 'ADMIN', status = 'ACTIVE' WHERE email = 'admin@example.com'",
+                    [hashed]
+                );
+            }
+        }
+
+        // 4. Auto-sync demo Super Admin account if requested
+        if (cleanEmail === 'superadmin@example.com' && password === 'super123') {
+            const [checkSuper] = await pool.query('SELECT user_id FROM users WHERE email = ?', [cleanEmail]);
+            if (checkSuper.length === 0) {
+                await pool.query(
+                    "INSERT INTO users (name, email, password, mobile, role, status) VALUES ('Super Administrator', 'superadmin@example.com', ?, '9888888888', 'SUPER ADMIN', 'ACTIVE')",
+                    [hashed]
+                );
+            } else {
+                await pool.query(
+                    "UPDATE users SET password = ?, role = 'SUPER ADMIN', status = 'ACTIVE' WHERE email = 'superadmin@example.com'",
+                    [hashed]
+                );
+            }
+        }
+
+        let [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [cleanEmail]);
         if (rows.length === 0) {
             res.writeHead(401, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({ success: false, message: 'Invalid email or password.' }));
@@ -126,6 +186,27 @@ async function login(req, res, body) {
         if (user.status === 'BLOCKED') {
             res.writeHead(403, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({ success: false, message: 'Your account has been blocked. Please contact support.' }));
+        }
+
+        // Auto-seed permissions for Admin on login
+        if (user.role === 'ADMIN') {
+            try {
+                const { DEFAULT_ADMIN_PERMISSIONS } = require('../lib/permissions');
+                for (const perm of DEFAULT_ADMIN_PERMISSIONS) {
+                    const [existingPerm] = await pool.query(
+                        'SELECT permission_id FROM admin_permissions WHERE admin_id = ? AND permission_name = ?',
+                        [user.user_id, perm]
+                    );
+                    if (existingPerm.length === 0) {
+                        await pool.query(
+                            'INSERT INTO admin_permissions (admin_id, permission_name) VALUES (?, ?)',
+                            [user.user_id, perm]
+                        );
+                    }
+                }
+            } catch (pErr) {
+                console.error('Error auto-seeding admin permissions on login:', pErr);
+            }
         }
 
         let passenger_id = null;

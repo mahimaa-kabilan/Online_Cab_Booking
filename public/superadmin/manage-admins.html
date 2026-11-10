@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Administrators - CabGo Super Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Standard Header Navbar matching Passenger & Driver -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/superadmin/superadmin-dashboard.html" class="brand-logo">
+                <span class="cab-badge" style="background:var(--accent);">SUPER ADMIN</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/superadmin/superadmin-dashboard.html">Overview</a></li>
+                <li><a href="/superadmin/manage-admins.html" class="active">Admins</a></li>
+                <li><a href="/superadmin/permissions.html">Permissions</a></li>
+                <li><a href="/superadmin/system-logs.html">Logs</a></li>
+                <li><a href="/superadmin/system-settings.html">Settings</a></li>
+
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h2>Administrator Accounts & Governance 🛡️</h2>
+                <p style="color: var(--text-secondary);">Provision new administrative accounts, update contact profiles, activate/deactivate, and manage credentials.</p>
+            </div>
+            <div style="display:flex; gap:0.75rem; align-items:center;">
+                <button onclick="openCreateAdminModal()" class="btn btn-primary btn-sm">+ Provision Administrator</button>
+                <button onclick="loadAdmins()" class="btn btn-outline btn-sm">🔄 Refresh List</button>
+            </div>
+        </div>
+
+        <!-- Filter Bar Card -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                <div style="display:flex; gap:0.75rem; flex:1; max-width:480px;">
+                    <input type="text" id="admin-search-input" class="form-control" placeholder="Search admin by name or email..." onkeyup="if(event.key==='Enter') loadAdmins()">
+                    <button onclick="loadAdmins()" class="btn btn-primary btn-sm">Search</button>
+                    <button onclick="resetSearch()" class="btn btn-outline btn-sm">Reset</button>
+                </div>
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);" id="admin-count-label">
+                    Loading administrators...
+                </div>
+            </div>
+        </div>
+
+        <!-- Admins Table Card -->
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Admin User</th>
+                            <th>Role</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th>Permissions</th>
+                            <th>Created On</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admins-tbody">
+                        <tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-secondary);">Loading administrators...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Create Admin Modal -->
+    <div id="create-admin-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3>Provision New Administrator</h3>
+                <button class="modal-close-btn" onclick="closeModal('create-admin-modal')">&times;</button>
+            </div>
+            <form id="create-admin-form" onsubmit="handleCreateAdmin(event)">
+                <div class="modal-body">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="ca-name">Full Name *</label>
+                            <input type="text" id="ca-name" class="form-control" placeholder="e.g. Rahul Sharma" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ca-email">Email Address *</label>
+                            <input type="email" id="ca-email" class="form-control" placeholder="e.g. rahul.admin@example.com" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="ca-password">Initial Password *</label>
+                            <input type="password" id="ca-password" class="form-control" placeholder="Minimum 6 characters" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="ca-mobile">Mobile Number *</label>
+                            <input type="text" id="ca-mobile" class="form-control" placeholder="e.g. 9876543210" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Initial Permissions Assigned</label>
+                        <div class="grid-2" style="background:var(--bg-body); padding:0.75rem; border-radius:var(--radius-md); font-size:0.85rem;">
+                            <label><input type="checkbox" name="ca-perm" value="manage_passengers" checked> Manage Passengers</label>
+                            <label><input type="checkbox" name="ca-perm" value="manage_drivers" checked> Manage Drivers</label>
+                            <label><input type="checkbox" name="ca-perm" value="manage_vehicles" checked> Manage Vehicles</label>
+                            <label><input type="checkbox" name="ca-perm" value="manage_trips" checked> Manage Trips</label>
+                            <label><input type="checkbox" name="ca-perm" value="manage_fares"> Manage Fares</label>
+                            <label><input type="checkbox" name="ca-perm" value="manage_service_areas"> Manage Service Areas</label>
+                            <label><input type="checkbox" name="ca-perm" value="view_reports" checked> View Reports</label>
+                            <label><input type="checkbox" name="ca-perm" value="block_unblock_users"> Block/Unblock Users</label>
+                            <label><input type="checkbox" name="ca-perm" value="view_system_logs"> View System Logs</label>
+                            <label><input type="checkbox" name="ca-perm" value="manage_system_settings"> Manage System Settings</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('create-admin-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Administrator</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Admin Modal -->
+    <div id="edit-admin-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="edit-admin-title">Edit Administrator Profile</h3>
+                <button class="modal-close-btn" onclick="closeModal('edit-admin-modal')">&times;</button>
+            </div>
+            <form id="edit-admin-form" onsubmit="handleEditAdmin(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="ea-id">
+
+                    <div class="form-group">
+                        <label class="form-label" for="ea-name">Full Name *</label>
+                        <input type="text" id="ea-name" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="ea-email">Email Address *</label>
+                        <input type="email" id="ea-email" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="ea-mobile">Mobile Number *</label>
+                        <input type="text" id="ea-mobile" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="ea-password">New Password (Leave blank to keep unchanged)</label>
+                        <input type="password" id="ea-password" class="form-control" placeholder="Optional new password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('edit-admin-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        let currentAdmins = [];
+        let currentSuperAdminId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!requireAuth('SUPER ADMIN')) return;
+
+            const user = getAuthUser();
+            if (user) {
+                currentSuperAdminId = user.user_id;
+            }
+
+            await loadAdmins();
+        });
+
+        async function loadAdmins() {
+            try {
+                const search = document.getElementById('admin-search-input').value.trim();
+                let url = '/superadmin/admins';
+                if (search) url += `?search=${encodeURIComponent(search)}`;
+
+                const res = await api.get(url);
+                const tbody = document.getElementById('admins-tbody');
+
+                if (!res.success || !res.admins || res.admins.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-secondary);">No administrators found.</td></tr>';
+                    document.getElementById('admin-count-label').textContent = '0 administrators';
+                    return;
+                }
+
+                currentAdmins = res.admins;
+                document.getElementById('admin-count-label').textContent = `Showing ${currentAdmins.length} administrator(s)`;
+
+                tbody.innerHTML = currentAdmins.map(a => {
+                    const isSuper = a.role === 'SUPER ADMIN';
+                    const isActive = a.status === 'ACTIVE';
+                    const isSelf = currentSuperAdminId && Number(currentSuperAdminId) === Number(a.user_id);
+
+                    const statusBadge = isActive ? 'badge-active' :
+                                        a.status === 'INACTIVE' ? 'badge-pending' : 'badge-cancelled';
+
+                    return `
+                        <tr>
+                            <td>
+                                <strong>${a.name} ${isSelf ? '<span style="font-size:0.75rem; color:var(--primary);">(You)</span>' : ''}</strong>
+                                <div style="font-size:0.8rem; color:var(--text-secondary);">${a.email}</div>
+                            </td>
+                            <td>
+                                <span class="badge ${isSuper ? 'badge-started' : 'badge-confirmed'}">
+                                    ${a.role}
+                                </span>
+                            </td>
+                            <td>${a.mobile || 'N/A'}</td>
+                            <td><span class="badge ${statusBadge}">${a.status}</span></td>
+                            <td>
+                                ${isSuper 
+                                    ? '<span style="color:var(--accent); font-weight:bold;">👑 All Access</span>'
+                                    : `<strong>${a.permissions_count || 0} / 10</strong> <a href="/superadmin/permissions.html?admin_id=${a.user_id}" style="margin-left:0.5rem; font-size:0.8rem;">Edit &rarr;</a>`
+                                }
+                            </td>
+                            <td>${formatDate(a.created_at)}</td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <button class="btn btn-outline btn-sm" onclick="openEditAdminModal(${a.user_id})">✏️ Edit</button>
+                                ${!isSuper ? `
+                                    <button class="btn ${isActive ? 'btn-warning' : 'btn-success'} btn-sm" onclick="toggleAdminStatus(${a.user_id}, '${a.status}')">
+                                        ${isActive ? 'Deactivate' : 'Activate'}
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteAdmin(${a.user_id}, '${a.name}')">🗑️</button>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load admins:', err);
+                showToast(err.message || 'Error loading administrators', 'danger');
+            }
+        }
+
+        function resetSearch() {
+            document.getElementById('admin-search-input').value = '';
+            loadAdmins();
+        }
+
+        function openCreateAdminModal() {
+            document.getElementById('create-admin-form').reset();
+            openModal('create-admin-modal');
+        }
+
+        async function handleCreateAdmin(e) {
+            e.preventDefault();
+            const checkedPerms = Array.from(document.querySelectorAll('input[name="ca-perm"]:checked')).map(cb => cb.value);
+
+            const payload = {
+                name: document.getElementById('ca-name').value.trim(),
+                email: document.getElementById('ca-email').value.trim(),
+                password: document.getElementById('ca-password').value,
+                mobile: document.getElementById('ca-mobile').value.trim(),
+                permissions: checkedPerms
+            };
+
+            try {
+                const res = await api.post('/superadmin/admins', payload);
+                if (res.success) {
+                    showToast(res.message || 'Administrator created successfully', 'success');
+                    closeModal('create-admin-modal');
+                    await loadAdmins();
+                } else {
+                    showToast(res.message || 'Failed to create administrator', 'danger');
+                }
+            } catch (err) {
+                console.error('Error creating admin:', err);
+                showToast(err.message || 'Error submitting admin creation', 'danger');
+            }
+        }
+
+        function openEditAdminModal(adminId) {
+            const a = currentAdmins.find(x => x.user_id === adminId);
+            if (!a) return;
+
+            document.getElementById('edit-admin-title').textContent = `Edit Administrator: ${a.name}`;
+            document.getElementById('ea-id').value = a.user_id;
+            document.getElementById('ea-name').value = a.name;
+            document.getElementById('ea-email').value = a.email;
+            document.getElementById('ea-mobile').value = a.mobile || '';
+            document.getElementById('ea-password').value = '';
+
+            openModal('edit-admin-modal');
+        }
+
+        async function handleEditAdmin(e) {
+            e.preventDefault();
+            const id = document.getElementById('ea-id').value;
+            const payload = {
+                name: document.getElementById('ea-name').value.trim(),
+                email: document.getElementById('ea-email').value.trim(),
+                mobile: document.getElementById('ea-mobile').value.trim()
+            };
+
+            const pw = document.getElementById('ea-password').value;
+            if (pw && pw.trim().length >= 6) {
+                payload.password = pw.trim();
+            }
+
+            try {
+                const res = await api.put(`/superadmin/admins/${id}`, payload);
+                if (res.success) {
+                    showToast(res.message || 'Administrator updated successfully', 'success');
+                    closeModal('edit-admin-modal');
+                    await loadAdmins();
+                } else {
+                    showToast(res.message || 'Failed to update administrator', 'danger');
+                }
+            } catch (err) {
+                console.error('Error editing admin:', err);
+                showToast(err.message || 'Error updating administrator', 'danger');
+            }
+        }
+
+        async function toggleAdminStatus(adminId, currentStatus) {
+            const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+            if (!confirm(`Are you sure you want to change this administrator status to ${newStatus}?`)) return;
+
+            try {
+                const res = await api.post('/superadmin/admins/status', { admin_id: adminId, status: newStatus });
+                if (res.success) {
+                    showToast(res.message || `Status updated to ${newStatus}`, 'success');
+                    await loadAdmins();
+                } else {
+                    showToast(res.message || 'Failed to update status', 'danger');
+                }
+            } catch (err) {
+                console.error('Error toggling status:', err);
+                showToast(err.message || 'Error updating status', 'danger');
+            }
+        }
+
+        async function deleteAdmin(adminId, adminName) {
+            if (!confirm(`Are you sure you want to PERMANENTLY DELETE administrator "${adminName}"?`)) return;
+
+            try {
+                const res = await api.delete(`/superadmin/admins/${adminId}`);
+                if (res.success) {
+                    showToast(res.message || 'Administrator deleted', 'success');
+                    await loadAdmins();
+                } else {
+                    showToast(res.message || 'Failed to delete administrator', 'danger');
+                }
+            } catch (err) {
+                console.error('Error deleting admin:', err);
+                showToast(err.message || 'Error deleting administrator', 'danger');
+            }
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) { el.classList.add('active'); el.style.display = 'flex'; }
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) { el.classList.remove('active'); el.style.display = 'none'; }
+        }
+    </script>
+</body>
+</html>

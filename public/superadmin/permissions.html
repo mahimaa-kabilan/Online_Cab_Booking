@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role & Permission Matrix - CabGo Super Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Standard Header Navbar matching Passenger & Driver -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/superadmin/superadmin-dashboard.html" class="brand-logo">
+                <span class="cab-badge" style="background:var(--accent);">SUPER ADMIN</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/superadmin/superadmin-dashboard.html">Overview</a></li>
+                <li><a href="/superadmin/manage-admins.html">Admins</a></li>
+                <li><a href="/superadmin/permissions.html" class="active">Permissions</a></li>
+                <li><a href="/superadmin/system-logs.html">Logs</a></li>
+                <li><a href="/superadmin/system-settings.html">Settings</a></li>
+
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h2>Role-Based Permission Matrix 🔑</h2>
+                <p style="color: var(--text-secondary);">Granular operational authority management. Enforced at the Node.js backend for all admin operations.</p>
+            </div>
+            <div>
+                <button onclick="loadAdminPermissions()" class="btn btn-outline btn-sm">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <!-- Administrator Selector Card -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="form-group" style="margin: 0; max-width: 550px;">
+                <label class="form-label" for="admin-select" style="font-weight: 700; font-size: 1rem;">Select Administrator to Configure Privileges:</label>
+                <div style="display:flex; gap:0.75rem;">
+                    <select id="admin-select" class="form-control" onchange="loadAdminPermissions()">
+                        <option value="">-- Choose an Administrator --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permission Form Container -->
+        <div id="permission-config-panel" style="display: none;">
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h3 id="target-admin-name">Administrator Permissions</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;" id="target-admin-email"></p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="selectAll(true)">Check All</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="selectAll(false)">Uncheck All</button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="savePermissions()">💾 Save Changes</button>
+                    </div>
+                </div>
+
+                <div style="padding: 1.5rem;">
+                    <div id="superadmin-notice" style="display: none; margin-bottom: 1.5rem; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: var(--radius-md); padding: 1rem; color: #0369a1;">
+                        👑 <strong>Super Administrator:</strong> This account has unrestricted system authority. Permission restrictions do not apply to Super Administrators.
+                    </div>
+
+                    <div class="grid-2" style="gap: 1.25rem;">
+                        <!-- Permission 1 -->
+                        <div class="card" style="padding: 1rem; border: 1px solid var(--border); background: var(--bg-body);">
+                            <label style="display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;">
+                                <input type="checkbox" id="perm-manage_passengers" value="manage_passengers" style="margin-top: 0.25rem; transform: scale(1.2);">
+                                <div>
+                                    <strong style="color: var(--text-primary); display: block;">👥 Manage Passengers</strong>
+                                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Browse registered passengers, view profile details, and inspect personal ride histories.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Permission 2 -->
+                        <div class="card" style="padding: 1rem; border: 1px solid var(--border); background: var(--bg-body);">
+                            <label style="display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;">
+                                <input type="checkbox" id="perm-manage_drivers" value="manage_drivers" style="margin-top: 0.25rem; transform: scale(1.2);">
+                                <div>
+                                    <strong style="color: var(--text-primary); display: block;">🚕 Manage Drivers</strong>
+                                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Review KYC documents, approve/reject driver verifications, and monitor duty status.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Permission 3 -->
+                        <div class="card" style="padding: 1rem; border: 1px solid var(--border); background: var(--bg-body);">
+                            <label style="display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;">
+                                <input type="checkbox" id="perm-manage_vehicles" value="manage_vehicles" style="margin-top: 0.25rem; transform: scale(1.2);">
+                                <div>
+                                    <strong style="color: var(--text-primary); display: block;">🚗 Manage Vehicles</strong>
+                                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Register fleet vehicles, update specifications, and assign vehicles to drivers.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Permission 4 -->
+                        <div class="card" style="padding: 1rem; border: 1px solid var(--border); background: var(--bg-body);">
+                            <label style="display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;">
+                                <input type="checkbox" id="perm-manage_trips" value="manage_trips" style="margin-top: 0.25rem; transform: scale(1.2);">
+                                <div>
+                                    <strong style="color: var(--text-primary); display: block;">🗺️ Manage Trips</strong>
+                                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Dispatch management: start trips, finalize completions, or administratively cancel rides.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Permission 5 -->
+                        <div class="card" style="padding: 1rem; border: 1px solid var(--border); background: var(--bg-body);">
+                            <label style="display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;">
+                                <input type="checkbox" id="perm-manage_fares" value="manage_fares" style="margin-top: 0.25rem; transform: scale(1.2);">
+                                <div>
+                                    <strong style="color: var(--text-primary); display: block;">💵 Manage Fares</strong>
+                                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Configure base fares, per-km rates, per-minute charges, and cancellation fees.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Permission 6 -->
+                        <div class="card" style="padding: 1rem; border: 1px solid var(--border); background: var(--bg-body);">
+                            <label style="display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;">
+                                <input type="checkbox" id="perm-manage_service_areas" value="manage_service_areas" style="margin-top: 0.25rem; transform: scale(1.2);">
+                                <div>
+                                    <strong style="color: var(--text-primary); display: block;">📍 Manage Service Areas</strong>
+                                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Add new operational cities/zones, edit area definitions, and toggle active status.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Permission 7 -->
+                        <div class="card" style="padding: 1rem; border: 1px solid var(--border); background: var(--bg-body);">
+                            <label style="display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;">
+                                <input type="checkbox" id="perm-view_reports" value="view_reports" style="margin-top: 0.25rem; transform: scale(1.2);">
+                                <div>
+                                    <strong style="color: var(--text-primary); display: block;">📈 View Reports</strong>
+                                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Access platform revenue summaries, category breakdowns, and driver performance.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Permission 8 -->
+                        <div class="card" style="padding: 1rem; border: 1px solid var(--border); background: var(--bg-body);">
+                            <label style="display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;">
+                                <input type="checkbox" id="perm-block_unblock_users" value="block_unblock_users" style="margin-top: 0.25rem; transform: scale(1.2);">
+                                <div>
+                                    <strong style="color: var(--text-primary); display: block;">🚫 Block / Unblock Users</strong>
+                                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Authority to freeze/unfreeze passenger and driver accounts from using the platform.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Permission 9 -->
+                        <div class="card" style="padding: 1rem; border: 1px solid var(--border); background: var(--bg-body);">
+                            <label style="display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;">
+                                <input type="checkbox" id="perm-view_system_logs" value="view_system_logs" style="margin-top: 0.25rem; transform: scale(1.2);">
+                                <div>
+                                    <strong style="color: var(--text-primary); display: block;">📜 View System Logs</strong>
+                                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Inspect general audit trail logs and administrative operational events.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Permission 10 -->
+                        <div class="card" style="padding: 1rem; border: 1px solid var(--border); background: var(--bg-body);">
+                            <label style="display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;">
+                                <input type="checkbox" id="perm-manage_system_settings" value="manage_system_settings" style="margin-top: 0.25rem; transform: scale(1.2);">
+                                <div>
+                                    <strong style="color: var(--text-primary); display: block;">⚙️ Manage System Settings</strong>
+                                    <span style="font-size: 0.82rem; color: var(--text-secondary);">Permission to view or update platform configuration parameters and commissions.</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+                        <button type="button" class="btn btn-primary" onclick="savePermissions()">💾 Save Permissions Configuration</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script>
+        const allPermissionKeys = [
+            'manage_passengers',
+            'manage_drivers',
+            'manage_vehicles',
+            'manage_trips',
+            'manage_fares',
+            'manage_service_areas',
+            'view_reports',
+            'block_unblock_users',
+            'view_system_logs',
+            'manage_system_settings'
+        ];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!requireAuth('SUPER ADMIN')) return;
+            await populateAdminDropdown();
+        });
+
+        async function populateAdminDropdown() {
+            try {
+                const res = await api.get('/superadmin/admins');
+                if (!res.success || !res.admins) return;
+
+                const select = document.getElementById('admin-select');
+                select.innerHTML = '<option value="">-- Choose an Administrator --</option>';
+
+                res.admins.forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = a.user_id;
+                    opt.textContent = `${a.name} (${a.email}) - [${a.role}]`;
+                    select.appendChild(opt);
+                });
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryAdminId = urlParams.get('admin_id');
+                if (queryAdminId) {
+                    select.value = queryAdminId;
+                    await loadAdminPermissions();
+                }
+            } catch (err) {
+                console.error('Failed to populate admins:', err);
+                showToast(err.message || 'Error fetching administrator list', 'danger');
+            }
+        }
+
+        async function loadAdminPermissions() {
+            const adminId = document.getElementById('admin-select').value;
+            const panel = document.getElementById('permission-config-panel');
+
+            if (!adminId) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            try {
+                const res = await api.get(`/superadmin/admins/${adminId}/permissions`);
+                if (!res.success) {
+                    showToast(res.message || 'Failed to fetch permissions', 'danger');
+                    panel.style.display = 'none';
+                    return;
+                }
+
+                const admin = res.admin;
+                const perms = res.permissions || res.assignedPermissions || [];
+                const isSuper = admin.role === 'SUPER ADMIN';
+
+                document.getElementById('target-admin-name').textContent = `Privileges for: ${admin.name}`;
+                document.getElementById('target-admin-email').textContent = `${admin.email} (Role: ${admin.role}) | Status: ${admin.status}`;
+
+                const notice = document.getElementById('superadmin-notice');
+                notice.style.display = isSuper ? 'block' : 'none';
+
+                allPermissionKeys.forEach(key => {
+                    const cb = document.getElementById(`perm-${key}`);
+                    if (cb) {
+                        cb.checked = isSuper ? true : perms.includes(key);
+                        cb.disabled = isSuper;
+                    }
+                });
+
+                panel.style.display = 'block';
+            } catch (err) {
+                console.error('Error loading permissions:', err);
+                showToast(err.message || 'Error loading permissions', 'danger');
+            }
+        }
+
+        function selectAll(check) {
+            allPermissionKeys.forEach(key => {
+                const cb = document.getElementById(`perm-${key}`);
+                if (cb && !cb.disabled) cb.checked = check;
+            });
+        }
+
+        async function savePermissions() {
+            const adminId = document.getElementById('admin-select').value;
+            if (!adminId) return;
+
+            const selectedPerms = allPermissionKeys.filter(k => {
+                const cb = document.getElementById(`perm-${k}`);
+                return cb && cb.checked;
+            });
+
+            try {
+                const res = await api.post('/superadmin/permissions', {
+                    admin_id: parseInt(adminId, 10),
+                    permissions: selectedPerms
+                });
+
+                if (res.success) {
+                    showToast(res.message || 'Permissions updated successfully', 'success');
+                    await loadAdminPermissions();
+                } else {
+                    showToast(res.message || 'Failed to update permissions', 'danger');
+                }
+            } catch (err) {
+                console.error('Failed to save permissions:', err);
+                showToast(err.message || 'Error saving permissions', 'danger');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -10,9 +10,9 @@ function hashPassword(password) {
 async function initDB() {
     console.log('Connecting to MySQL server...');
     const connection = await mysql.createConnection({
-        host: process.env.DB_HOST || 'localhost',
+        host: process.env.DB_HOST || '127.0.0.1',
         user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || 'root',
+        password: process.env.DB_PASSWORD || 'worms',
         port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
         multipleStatements: true
     });
@@ -97,16 +97,61 @@ async function initDB() {
 
         // 4. Admin: admin@example.com / admin123
         const adminHash = hashPassword('admin123');
-        await connection.query(`
+        const [adminUser] = await connection.query(`
             INSERT INTO users (name, email, password, mobile, role, status)
             VALUES ('Admin User', 'admin@example.com', ?, '9999999999', 'ADMIN', 'ACTIVE');
         `, [adminHash]);
 
+        // Default admin permissions
+        const defaultPerms = [
+            'manage_passengers',
+            'manage_drivers',
+            'manage_vehicles',
+            'manage_trips',
+            'manage_fares',
+            'manage_service_areas',
+            'view_reports',
+            'block_unblock_users',
+            'view_system_logs',
+            'manage_system_settings'
+        ];
+        for (const perm of defaultPerms) {
+            await connection.query(`
+                INSERT INTO admin_permissions (admin_id, permission_name) VALUES (?, ?)
+            `, [adminUser.insertId, perm]);
+        }
+
+        // 5. Super Admin: superadmin@example.com / super123
+        const superAdminHash = hashPassword('super123');
+        await connection.query(`
+            INSERT INTO users (name, email, password, mobile, role, status)
+            VALUES ('Super Administrator', 'superadmin@example.com', ?, '9888888888', 'SUPER ADMIN', 'ACTIVE');
+        `, [superAdminHash]);
+
+        // 6. System Settings
+        const settings = [
+            ['app_name', 'CabGo Online Cab Booking', 'Platform Application Name'],
+            ['support_email', 'support@cabgo.com', 'Customer Support Email Address'],
+            ['support_phone', '+91 98765 43210', 'Helpline & Emergency Contact Phone'],
+            ['surge_multiplier', '1.0', 'Peak Hour Surge Pricing Multiplier (1.0 = Standard)'],
+            ['cancellation_time_limit_mins', '5', 'Free Passenger Cancellation Window (Minutes)'],
+            ['max_active_bookings_per_passenger', '1', 'Maximum Concurrent Active Requests Allowed'],
+            ['driver_commission_pct', '15', 'Platform Commission Deducted Per Completed Trip (%)']
+        ];
+        for (const [k, v, desc] of settings) {
+            await connection.query(`
+                INSERT INTO system_settings (setting_key, setting_value, description)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
+            `, [k, v, desc]);
+        }
+
         console.log('Demo accounts seeded successfully:');
-        console.log('  Passenger: john@example.com / pass123');
-        console.log('  Driver 1:  mike@example.com / driver123 (Sedan, Available)');
-        console.log('  Driver 2:  sam@example.com  / driver123 (SUV, Available)');
-        console.log('  Admin:     admin@example.com / admin123');
+        console.log('  Passenger:   john@example.com / pass123');
+        console.log('  Driver 1:    mike@example.com / driver123 (Sedan, Available)');
+        console.log('  Driver 2:    sam@example.com  / driver123 (SUV, Available)');
+        console.log('  Admin:       admin@example.com / admin123');
+        console.log('  Super Admin: superadmin@example.com / super123');
     }
 
     await connection.end();

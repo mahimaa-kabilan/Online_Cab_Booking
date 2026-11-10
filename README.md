@@ -4,7 +4,7 @@ A modular, clean, full-stack Online Cab Booking System developed with **Vanilla 
 
 ---
 
-## 🛠️ Technology Stack & Constraints Followed
+## Technology Stack & Constraints Followed
 
 - **Backend**: Node.js built-in modules (`http`, `url`, `fs`, `path`, `crypto`)
 - **Database**: MySQL (relational schema with primary keys, foreign keys, cascading constraints, and pooling via `mysql2`)
@@ -14,7 +14,7 @@ A modular, clean, full-stack Online Cab Booking System developed with **Vanilla 
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 WebTech/
@@ -57,7 +57,7 @@ WebTech/
 
 ---
 
-## 🗄️ Database Tables Implemented
+## Database Tables Implemented
 
 1. `users` (user_id, name, email, password, mobile, role, status, created_at)
 2. `passenger_profiles` (passenger_id, user_id, default_address, emergency_contact)
@@ -74,7 +74,7 @@ WebTech/
 
 ---
 
-## 🚀 How to Run
+## How to Run
 
 ### 1. Database Setup
 The database script automatically connects to your MySQL server (configured with default user `root` and password `root`), creates `cab_booking_db`, creates all 12 tables, and seeds initial fare rules, service areas, and test accounts:
@@ -90,7 +90,7 @@ Start the native Node.js HTTP server:
 npm start
 ```
 The application will be accessible at:
-👉 **`http://localhost:3000`**
+**`http://localhost:3000`**
 
 ### 3. Run Integration Test
 To run an automated test that validates registration, login, ride request, driver acceptance, starting the trip, completing the trip, and rating:
@@ -101,7 +101,7 @@ node scripts/test-integration.js
 
 ---
 
-## 👥 Pre-Seeded Test Accounts
+## Pre-Seeded Test Accounts
 
 | Role | Name | Email | Password | Details |
 | :--- | :--- | :--- | :--- | :--- |
@@ -109,3 +109,4 @@ node scripts/test-integration.js
 | **Driver 1** | Mike Ross | `mike@example.com` | `driver123` | Sedan (Toyota Camry, DL-01-AB-1234), Rating 4.9 |
 | **Driver 2** | Sam Wilson | `sam@example.com` | `driver123` | SUV (Hyundai Creta, DL-01-XY-5678), Rating 4.85 |
 | **Admin** | Admin User | `admin@example.com` | `admin123` | Administrator account |
+| **Super Admin** | Super Admin User | `superadmin@example.com` | `superadmin123` | Super admin with full privileges |

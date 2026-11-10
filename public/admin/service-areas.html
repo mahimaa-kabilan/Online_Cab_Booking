@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Areas - CabGo Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Standard Header Navbar matching Passenger & Driver -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/admin/admin-dashboard.html" class="brand-logo">
+                <span class="cab-badge">ADMIN</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/admin/admin-dashboard.html">Dashboard</a></li>
+                <li><a href="/admin/manage-passengers.html">Passengers</a></li>
+                <li><a href="/admin/manage-drivers.html">Drivers</a></li>
+                <li><a href="/admin/manage-vehicles.html">Vehicles</a></li>
+                <li><a href="/admin/manage-trips.html">Trips</a></li>
+                <li><a href="/admin/service-areas.html" class="active">Service Areas</a></li>
+                <li><a href="/admin/fare-rules.html">Fare Rules</a></li>
+                <li><a href="/admin/reports.html">Reports</a></li>
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h2>Operational Service Areas 📍</h2>
+                <p style="color: var(--text-secondary);">Manage geographical operating zones, cities, and coverage territories.</p>
+            </div>
+            <div style="display:flex; gap:0.75rem; align-items:center;">
+                <button onclick="openAddAreaModal()" class="btn btn-primary btn-sm">+ Add Service Area</button>
+                <button onclick="loadServiceAreas()" class="btn btn-outline btn-sm">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <!-- Service Areas Table Card -->
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Area ID</th>
+                            <th>Area Name</th>
+                            <th>City</th>
+                            <th>State</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="areas-tbody">
+                        <tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-secondary);">Loading operational areas...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Service Area Modal -->
+    <div id="area-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="modal-area-title">Create Service Area</h3>
+                <button class="modal-close-btn" onclick="closeModal('area-modal')">&times;</button>
+            </div>
+            <form id="area-form" onsubmit="handleAreaFormSubmit(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="a-id">
+
+                    <div class="form-group">
+                        <label class="form-label" for="a-name">Service Area Name *</label>
+                        <input type="text" id="a-name" class="form-control" placeholder="e.g. Connaught Place Zone" required>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="a-city">City *</label>
+                            <input type="text" id="a-city" class="form-control" placeholder="e.g. New Delhi" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="a-state">State *</label>
+                            <input type="text" id="a-state" class="form-control" placeholder="e.g. Delhi" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="a-status">Status</label>
+                        <select id="a-status" class="form-control">
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('area-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Area</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        let serviceAreas = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!requireAuth('ADMIN')) return;
+            await loadServiceAreas();
+        });
+
+        async function loadServiceAreas() {
+            try {
+                const res = await api.get('/admin/service-areas');
+                const tbody = document.getElementById('areas-tbody');
+
+                if (!res.success) {
+                    showToast(res.message || 'Failed to load service areas', 'danger');
+                    return;
+                }
+
+                serviceAreas = res.serviceAreas || res.areas || [];
+                if (serviceAreas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-secondary);">No service areas found in database.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = serviceAreas.map(a => {
+                    const isActive = a.status === 'ACTIVE' || a.is_active === 1;
+                    return `
+                        <tr>
+                            <td><strong>#${a.area_id}</strong></td>
+                            <td><strong style="color:var(--text-primary);">${a.area_name}</strong></td>
+                            <td>${a.city}</td>
+                            <td>${a.state}</td>
+                            <td>
+                                <span class="badge ${isActive ? 'badge-active' : 'badge-cancelled'}">
+                                    ${isActive ? 'ACTIVE' : 'INACTIVE'}
+                                </span>
+                            </td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <button class="btn btn-outline btn-sm" onclick="openEditAreaModal(${a.area_id})">✏️ Edit</button>
+                                <button class="btn ${isActive ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleAreaStatus(${a.area_id}, '${isActive ? 'INACTIVE' : 'ACTIVE'}')">
+                                    ${isActive ? 'Deactivate' : 'Activate'}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load service areas:', err);
+                showToast(err.message || 'Error loading service areas', 'danger');
+            }
+        }
+
+        function openAddAreaModal() {
+            document.getElementById('modal-area-title').textContent = 'Create New Service Area';
+            document.getElementById('a-id').value = '';
+            document.getElementById('a-name').value = '';
+            document.getElementById('a-city').value = 'New Delhi';
+            document.getElementById('a-state').value = 'Delhi';
+            document.getElementById('a-status').value = 'ACTIVE';
+            openModal('area-modal');
+        }
+
+        function openEditAreaModal(areaId) {
+            const a = serviceAreas.find(x => x.area_id === areaId);
+            if (!a) return;
+
+            document.getElementById('modal-area-title').textContent = `Edit Service Area (${a.area_name})`;
+            document.getElementById('a-id').value = a.area_id;
+            document.getElementById('a-name').value = a.area_name;
+            document.getElementById('a-city').value = a.city;
+            document.getElementById('a-state').value = a.state;
+            document.getElementById('a-status').value = a.status || 'ACTIVE';
+            openModal('area-modal');
+        }
+
+        async function handleAreaFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('a-id').value;
+            const payload = {
+                area_name: document.getElementById('a-name').value.trim(),
+                city: document.getElementById('a-city').value.trim(),
+                state: document.getElementById('a-state').value.trim(),
+                status: document.getElementById('a-status').value
+            };
+
+            try {
+                let res;
+                if (id) {
+                    res = await api.put(`/admin/service-areas/${id}`, payload);
+                } else {
+                    res = await api.post('/admin/service-areas', payload);
+                }
+
+                if (res.success) {
+                    showToast(res.message || 'Service area saved successfully', 'success');
+                    closeModal('area-modal');
+                    await loadServiceAreas();
+                } else {
+                    showToast(res.message || 'Failed to save area', 'danger');
+                }
+            } catch (err) {
+                console.error('Error saving service area:', err);
+                showToast(err.message || 'Error saving service area', 'danger');
+            }
+        }
+
+        async function toggleAreaStatus(areaId, newStatus) {
+            try {
+                const res = await api.post('/admin/service-areas/toggle-status', { area_id: areaId, status: newStatus });
+                if (res.success) {
+                    showToast(res.message || 'Service area status updated', 'success');
+                    await loadServiceAreas();
+                } else {
+                    showToast(res.message || 'Failed to update status', 'danger');
+                }
+            } catch (err) {
+                console.error('Error toggling area status:', err);
+                showToast(err.message || 'Error updating status', 'danger');
+            }
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) { el.classList.add('active'); el.style.display = 'flex'; }
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) { el.classList.remove('active'); el.style.display = 'none'; }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Logs & Audit Trail - CabGo Super Admin</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Standard Header Navbar matching Passenger & Driver -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/superadmin/superadmin-dashboard.html" class="brand-logo">
+                <span class="cab-badge" style="background:var(--accent);">SUPER ADMIN</span> CabGo
+            </a>
+            <ul class="nav-links">
+                <li><a href="/superadmin/superadmin-dashboard.html">Overview</a></li>
+                <li><a href="/superadmin/manage-admins.html">Admins</a></li>
+                <li><a href="/superadmin/permissions.html">Permissions</a></li>
+                <li><a href="/superadmin/system-logs.html" class="active">Logs</a></li>
+                <li><a href="/superadmin/system-settings.html">Settings</a></li>
+
+            </ul>
+            <div id="nav-user-container" class="nav-user"></div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h2>System Logs & Audit Trail 📜</h2>
+                <p style="color: var(--text-secondary);">Trace security events, user logins, driver verifications, and system modifications.</p>
+            </div>
+            <div>
+                <button onclick="loadLogs()" class="btn btn-outline btn-sm">🔄 Refresh Logs</button>
+            </div>
+        </div>
+
+        <!-- Filter Bar Card -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; flex: 1;">
+                    <input type="text" id="log-search" class="form-control" placeholder="Search by description or user..." style="max-width: 320px;" onkeyup="if(event.key==='Enter') loadLogs()">
+
+                    <select id="log-action" class="form-control" style="max-width: 220px;" onchange="loadLogs()">
+                        <option value="">All Actions</option>
+                        <option value="USER_LOGIN">User Logins</option>
+                        <option value="USER_REGISTER">Registrations</option>
+                        <option value="USER_STATUS_CHANGE">Status Changes</option>
+                        <option value="DRIVER_VERIFICATION_UPDATE">Driver Verifications</option>
+                        <option value="ADMIN_START_TRIP">Trip Started</option>
+                        <option value="ADMIN_COMPLETE_TRIP">Trip Completed</option>
+                        <option value="ADMIN_CANCEL_TRIP">Trip Cancelled</option>
+                        <option value="SUPER_ADMIN_CREATE_ADMIN">Admin Created</option>
+                        <option value="SUPER_ADMIN_UPDATE_PERMISSIONS">Permissions Modified</option>
+                        <option value="SUPER_ADMIN_UPDATE_SETTINGS">Settings Changed</option>
+                    </select>
+
+                    <button onclick="loadLogs()" class="btn btn-primary btn-sm">Filter</button>
+                    <button onclick="resetLogFilters()" class="btn btn-outline btn-sm">Reset</button>
+                </div>
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);" id="logs-count-label">
+                    Loading logs...
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Logs Table Card -->
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                            <th>Description</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-tbody">
+                        <tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-secondary);">Loading system logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!requireAuth('SUPER ADMIN')) return;
+            await loadLogs();
+        });
+
+        async function loadLogs() {
+            try {
+                const search = document.getElementById('log-search').value.trim();
+                const action = document.getElementById('log-action').value;
+
+                const params = new URLSearchParams();
+                if (search) params.append('search', search);
+                if (action) params.append('action', action);
+                params.append('limit', '100');
+
+                const res = await api.get('/superadmin/logs?' + params.toString());
+                const tbody = document.getElementById('logs-tbody');
+
+                if (!res.success || !res.logs || res.logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-secondary);">No audit logs match criteria.</td></tr>';
+                    document.getElementById('logs-count-label').textContent = '0 logs';
+                    return;
+                }
+
+                document.getElementById('logs-count-label').textContent = `Showing ${res.logs.length} audit event(s)`;
+
+                tbody.innerHTML = res.logs.map(l => {
+                    const actionClass = l.action.includes('CANCEL') ? 'badge-cancelled' :
+                                        l.action.includes('COMPLETE') || l.action.includes('APPROVED') ? 'badge-completed' :
+                                        l.action.includes('CREATE') || l.action.includes('LOGIN') ? 'badge-active' : 'badge-pending';
+
+                    return `
+                        <tr>
+                            <td><code>#${l.log_id}</code></td>
+                            <td style="white-space:nowrap; color:var(--text-secondary); font-size:0.85rem;">
+                                ${formatDate(l.created_at)}
+                            </td>
+                            <td>
+                                <strong>${l.user_name || 'System'}</strong>
+                                ${l.user_id ? `<div style="font-size:0.75rem; color:var(--text-secondary);">UID #${l.user_id}</div>` : ''}
+                            </td>
+                            <td><span class="badge ${l.user_role === 'SUPER ADMIN' ? 'badge-started' : 'badge-confirmed'}">${l.user_role || 'SYSTEM'}</span></td>
+                            <td><span class="badge ${actionClass}">${l.action}</span></td>
+                            <td style="max-width: 350px; word-break: break-word;">${l.description}</td>
+                            <td><code>${l.ip_address || '127.0.0.1'}</code></td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load logs:', err);
+                showToast(err.message || 'Error loading system logs', 'danger');
+            }
+        }
+
+        function resetLogFilters() {
+            document.getElementById('log-search').value = '';
+            document.getElementById('log-action').value = '';
+            loadLogs();
+        }
+    </script>
+</body>
+</html>

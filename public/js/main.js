@@ -40,21 +40,27 @@ function requireAuth(allowedRole = null) {
         return false;
     }
 
-    if (allowedRole && user.role !== allowedRole) {
+    if (allowedRole) {
+        // Super Admin is permitted on both ADMIN and SUPER ADMIN pages
         if (allowedRole === 'ADMIN' && (user.role === 'ADMIN' || user.role === 'SUPER ADMIN')) {
             return true;
         }
 
-        if (user.role === 'PASSENGER') {
-            window.location.href = '/passenger/passenger-dashboard.html';
-        } else if (user.role === 'DRIVER') {
-            window.location.href = '/driver/driver-dashboard.html';
-        } else if (user.role === 'ADMIN' || user.role === 'SUPER ADMIN') {
-            window.location.href = '/admin/admin-dashboard.html';
-        } else {
-            window.location.href = '/index.html';
+        // Strict role check
+        if (user.role !== allowedRole) {
+            if (user.role === 'PASSENGER') {
+                window.location.href = '/passenger/passenger-dashboard.html';
+            } else if (user.role === 'DRIVER') {
+                window.location.href = '/driver/driver-dashboard.html';
+            } else if (user.role === 'SUPER ADMIN') {
+                window.location.href = '/superadmin/superadmin-dashboard.html';
+            } else if (user.role === 'ADMIN') {
+                window.location.href = '/admin/admin-dashboard.html';
+            } else {
+                window.location.href = '/index.html';
+            }
+            return false;
         }
-        return false;
     }
 
     return true;
@@ -97,7 +103,45 @@ function showToast(message, type = 'info') {
     }, 3500);
 }
 
-// Direct backend connection wrapper (no mock / simulated data)
+// --- UNIVERSAL MODAL CONTROLS ---
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.add('active');
+        el.style.display = 'flex';
+    }
+}
+
+function closeModal(id) {
+    if (id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.remove('active');
+            el.style.display = 'none';
+        }
+    } else {
+        document.querySelectorAll('.modal-overlay').forEach(m => {
+            m.classList.remove('active');
+            m.style.display = 'none';
+        });
+    }
+}
+
+// Close modal if user clicks outside modal card on the backdrop
+document.addEventListener('click', (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains('modal-overlay')) {
+        closeModal(e.target.id);
+    }
+});
+
+// Close modal on Escape key press
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+
+// Direct backend connection wrapper
 window.api = {
     getToken: getAuthToken,
     setToken: (t) => { if (t) localStorage.setItem('cab_auth_token', t); else localStorage.removeItem('cab_auth_token'); },
@@ -109,7 +153,7 @@ window.api = {
     formatDate: formatDate,
     toast: showToast,
 
-    // Direct HTTP fetch to Node.js + MySQL backend
+    // Direct HTTP GET
     async get(endpoint) {
         const token = getAuthToken();
         const res = await fetch('/api' + endpoint.replace('/api', ''), {
@@ -123,6 +167,7 @@ window.api = {
         return data;
     },
 
+    // Direct HTTP POST
     async post(endpoint, body) {
         const token = getAuthToken();
         const headers = { 'Content-Type': 'application/json' };
@@ -140,6 +185,7 @@ window.api = {
         return data;
     },
 
+    // Direct HTTP PUT
     async put(endpoint, body) {
         const token = getAuthToken();
         const headers = { 'Content-Type': 'application/json' };
@@ -148,6 +194,23 @@ window.api = {
             method: 'PUT',
             headers,
             body: JSON.stringify(body || {})
+        });
+        if (res.status === 401 && window.location.pathname !== '/index.html') {
+            logout();
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+        return data;
+    },
+
+    // Direct HTTP DELETE
+    async delete(endpoint) {
+        const token = getAuthToken();
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch('/api' + endpoint.replace('/api', ''), {
+            method: 'DELETE',
+            headers
         });
         if (res.status === 401 && window.location.pathname !== '/index.html') {
             logout();
@@ -170,15 +233,20 @@ function initNavbar() {
 
     if (user) {
         let dashboardLink = '/passenger/passenger-dashboard.html';
+        let roleBadgeClass = 'badge-active';
         if (user.role === 'DRIVER') {
             dashboardLink = '/driver/driver-dashboard.html';
-        } else if (user.role === 'ADMIN' || user.role === 'SUPER ADMIN') {
+        } else if (user.role === 'SUPER ADMIN') {
+            dashboardLink = '/superadmin/superadmin-dashboard.html';
+            roleBadgeClass = 'badge-started';
+        } else if (user.role === 'ADMIN') {
             dashboardLink = '/admin/admin-dashboard.html';
         }
 
         navUserContainer.innerHTML = `
-            <div class="user-badge">
+            <div class="user-badge" style="display:flex; align-items:center; gap:0.5rem;">
                 <span>👤 <strong>${user.name}</strong></span>
+                <span class="badge ${roleBadgeClass}" style="font-size:0.7rem;">${user.role}</span>
             </div>
             <a href="${dashboardLink}" class="btn btn-outline btn-sm" style="color:#fff; border-color:#475569;">Dashboard</a>
             <button id="nav-logout-btn" class="btn btn-danger btn-sm">Logout</button>
